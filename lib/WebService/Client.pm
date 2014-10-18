@@ -4,7 +4,7 @@ use Moo::Role;
 # VERSION
 
 use HTTP::Request::Common qw(DELETE GET POST PUT);
-use JSON qw(decode_json encode_json);
+use JSON;
 use LWP::UserAgent;
 
 has base_url => ( is => 'ro', required => 1 );
@@ -38,11 +38,15 @@ sub get {
 
 sub post {
     my ($self, $path, $params) = @_;
-    return $self->req(POST $path, content => encode_json $params);
+    my $json = JSON->new();
+    $json->convert_blessed(1);
+    return $self->req(POST $path, content => $json->encode($params) );
 }
 
 sub put {
     my ($self, $path, $params) = @_;
+    my $json = JSON->new();
+    $json->convert_blessed(1);
     return $self->req(PUT $path, content => encode_json $params);
 }
 
