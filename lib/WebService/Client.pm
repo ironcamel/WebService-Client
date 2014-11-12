@@ -26,6 +26,11 @@ has retries => ( is => 'ro', default => 0 );
 
 has logger => ( is => 'ro' );
 
+has content_type => (
+    is      => 'rw',
+    default => 'application/json',
+);
+
 sub get {
     my ($self, $path, $params) = @_;
     $params ||= {};
@@ -38,12 +43,14 @@ sub get {
 
 sub post {
     my ($self, $path, $params) = @_;
-    return $self->req(POST $path, content => encode_json $params);
+    $params = encode_json $params if $params and $self->content_type =~ /json/;
+    return $self->req(POST $path, ( content => $params ) x!! $params);
 }
 
 sub put {
     my ($self, $path, $params) = @_;
-    return $self->req(PUT $path, content => encode_json $params);
+    $params = encode_json $params if $params and $self->content_type =~ /json/;
+    return $self->req(PUT $path, ( content => $params ) x!! $params);
 }
 
 sub delete {
@@ -63,7 +70,7 @@ around qw(delete get post put) => sub {
 
 sub req {
     my ($self, $req) = @_;
-    $req->header(content_type => 'application/json');
+    $req->header(content_type => $self->content_type);
     $self->_log_request($req);
     my $res = $self->ua->request($req);
     Moo::Role->apply_roles_to_object($res, 'HTTP::Response::Stringable');
@@ -76,7 +83,7 @@ sub req {
         $self->_log_response($res);
     }
 
-    return undef if $res->code =~ /404|410/;
+    return undef if $req->method eq 'GET' and $res->code =~ /404|410/;
     die $res unless $res->is_success;
     return $res->content ? decode_json($res->content) : 1;
 }
