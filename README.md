@@ -4,7 +4,7 @@ WebService::Client - A base role for quickly and easily creating web service cli
 
 # VERSION
 
-version 0.0001
+version 0.0100
 
 # SYNOPSIS
 
@@ -22,6 +22,8 @@ version 0.0001
             $self->ua->default_header('X-Auth-Token' => $self->auth_token);
             # or if the web service uses http basic/digest authentication:
             # $self->ua->credentials( ... );
+            # or
+            # $self->ua->default_headers->authorization_basic( ... );
         }
 
         method get_widgets() {
@@ -56,6 +58,36 @@ the fun part - writing the web service specific code.
 
 It is important to note that this only supports JSON based web services.
 If your web service does not support JSON, then I am sorry.
+
+# ATTRIBUTES
+
+## base\_url
+
+This is the only attribute that is required.
+This is the base url that all request will be made against.
+
+## ua
+
+Optional. A proper default LWP::UserAgent will be created for you.
+
+## timeout
+
+Optional.
+Default is 10.
+
+## retries
+
+Optional.
+Default is 0.
+
+## logger
+
+Optional.
+
+## content\_type
+
+Optional.
+Default is `'application/json'`.
 
 # METHODS
 

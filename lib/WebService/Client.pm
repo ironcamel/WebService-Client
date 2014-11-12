@@ -130,6 +130,8 @@ sub log {
             $self->ua->default_header('X-Auth-Token' => $self->auth_token);
             # or if the web service uses http basic/digest authentication:
             # $self->ua->credentials( ... );
+            # or
+            # $self->ua->default_headers->authorization_basic( ... );
         }
 
         method get_widgets() {
@@ -164,6 +166,36 @@ the fun part - writing the web service specific code.
 
 It is important to note that this only supports JSON based web services.
 If your web service does not support JSON, then I am sorry.
+
+=head1 ATTRIBUTES
+
+=head2 base_url
+
+This is the only attribute that is required.
+This is the base url that all request will be made against.
+
+=head2 ua
+
+Optional. A proper default LWP::UserAgent will be created for you.
+
+=head2 timeout
+
+Optional.
+Default is 10.
+
+=head2 retries
+
+Optional.
+Default is 0.
+
+=head2 logger
+
+Optional.
+
+=head2 content_type
+
+Optional.
+Default is C<'application/json'>.
 
 =head1 METHODS
 
