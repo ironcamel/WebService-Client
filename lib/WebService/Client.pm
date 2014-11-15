@@ -33,44 +33,53 @@ has content_type => (
 
 sub get {
     my ($self, $path, $params) = @_;
+    $path = $self->prepare_path($path);
     $params ||= {};
     my $q = '';
     if (%$params) {
         $q = '?' . join '&', map { "$_=$params->{$_}" } keys %$params;
     }
-    return $self->req(GET "$path$q");
+    my $req = GET "$path$q";
+    return $self->req($self->prepare_req($req));
 }
 
 sub post {
     my ($self, $path, $params) = @_;
+    $path = $self->prepare_path($path);
     $params = encode_json $params if $params and $self->content_type =~ /json/;
-    return $self->req(POST $path, ( content => $params ) x!! $params);
+    my $req = POST $path, ( content => $params ) x!! $params;
+    return $self->req($self->prepare_req($req));
 }
 
 sub put {
     my ($self, $path, $params) = @_;
+    $path = $self->prepare_path($path);
     $params = encode_json $params if $params and $self->content_type =~ /json/;
-    return $self->req(PUT $path, ( content => $params ) x!! $params);
+    my $req = PUT $path, ( content => $params ) x!! $params;
+    return $self->req($self->prepare_req($req));
 }
 
 sub delete {
     my ($self, $path) = @_;
-    return $self->req(DELETE $path);
+    $path = $self->prepare_path($path);
+    my $req = DELETE $path;
+    return $self->req($self->prepare_req($req));
 }
 
-# Prefix the path param of the http methods with the base_url
-around qw(delete get post put) => sub {
-    my $orig = shift;
-    my $self = shift;
-    my $path = shift;
-    die 'Path is missing' unless $path;
-    my $url = $self->_url($path);
-    return $self->$orig($url, @_);
-};
+sub prepare_path {
+    my ($self, $path) = @_;
+    die 'The path is missing' unless defined $path;
+    return $path =~ /^http/ ? $path : $self->base_url . $path;
+}
+
+sub prepare_req {
+    my ($self, $req) = @_;
+    $req->header(content_type => $self->content_type);
+    return $req;
+}
 
 sub req {
     my ($self, $req) = @_;
-    $req->header(content_type => $self->content_type);
     $self->_log_request($req);
     my $res = $self->ua->request($req);
     Moo::Role->apply_roles_to_object($res, 'HTTP::Response::Stringable');
@@ -86,11 +95,6 @@ sub req {
     return undef if $req->method eq 'GET' and $res->code =~ /404|410/;
     die $res unless $res->is_success;
     return $res->content ? decode_json($res->content) : 1;
-}
-
-sub _url {
-    my ($self, $path) = @_;
-    return $path =~ /^http/ ? $path : $self->base_url . $path;
 }
 
 sub _log_request {
