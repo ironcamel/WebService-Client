@@ -32,30 +32,34 @@ has content_type => (
 );
 
 sub get {
-    my ($self, $path, $params) = @_;
+    my ($self, $path, $params, %args) = @_;
     $params ||= {};
+    my $headers = $args{headers} || [];
     my $q = '';
     if (%$params) {
         $q = '?' . join '&', map { "$_=$params->{$_}" } keys %$params;
     }
-    return $self->req(GET "$path$q");
+    return $self->req(GET "$path$q", @$headers);
 }
 
 sub post {
-    my ($self, $path, $params) = @_;
+    my ($self, $path, $params, %args) = @_;
+    my $headers = $args{headers} || [];
     $params = encode_json $params if $params and $self->content_type =~ /json/;
-    return $self->req(POST $path, ( content => $params ) x!! $params);
+    return $self->req(POST $path, @$headers, content => $params);
 }
 
 sub put {
-    my ($self, $path, $params) = @_;
+    my ($self, $path, $params, %args) = @_;
+    my $headers = $args{headers} || [];
     $params = encode_json $params if $params and $self->content_type =~ /json/;
-    return $self->req(PUT $path, ( content => $params ) x!! $params);
+    return $self->req(PUT $path, @$headers, content => $params);
 }
 
 sub delete {
-    my ($self, $path) = @_;
-    return $self->req(DELETE $path);
+    my ($self, $path, %args) = @_;
+    my $headers = $args{headers} || [];
+    return $self->req(DELETE $path, @$headers);
 }
 
 # Prefix the path param of the http methods with the base_url
@@ -71,16 +75,16 @@ around qw(delete get post put) => sub {
 sub req {
     my ($self, $req) = @_;
     $req->header(content_type => $self->content_type);
-    $self->_log_request($req);
+    $self->log($req->as_string);
     my $res = $self->ua->request($req);
     Moo::Role->apply_roles_to_object($res, 'HTTP::Response::Stringable');
-    $self->_log_response($res);
+    $self->log($res->as_string);
 
     my $retries = $self->retries;
     while ($res->code =~ /^5/ and $retries--) {
         sleep 1;
         $res = $self->ua->request($req);
-        $self->_log_response($res);
+        $self->log($res->as_string);
     }
 
     return undef if $req->method eq 'GET' and $res->code =~ /404|410/;
@@ -91,19 +95,6 @@ sub req {
 sub _url {
     my ($self, $path) = @_;
     return $path =~ /^http/ ? $path : $self->base_url . $path;
-}
-
-sub _log_request {
-    my ($self, $req) = @_;
-    $self->log($req->method . ' => ' . $req->uri);
-    my $content = $req->content;
-    return unless length $content;
-    $self->log($content);
-}
-
-sub _log_response {
-    my ($self, $res) = @_;
-    $self->log("$res");
 }
 
 sub log {
@@ -205,33 +196,37 @@ response data, assuming the response body contained any data.
 This will usually be a hashref.
 If the web service responds with a failure, then the corresponding HTTP
 response object is thrown as an exception.
-This exception is simply an L<HTTP::Response> object that can be stringified.
-HTTP responses with a status code of 404 or 410 will not result in an exception.
-Instead, the corresponding methods will simply return C<undef>.
-The reasoning behind this is that GET'ing a resource that does not exist
-does not warrant an exception.
+This exception is a L<HTTP::Response> object that has the
+L<HTTP::Response::Stringable> role so it can be stringified.
+GET requests that result in 404 or 410 will not result in an exception.
+Instead, they will simply return C<undef>.
+
+The `get/post/put/delete` methods all can take an optional headers keyword
+argument that is an arrayref of custom headers.
 
 =head2 get
 
-    $client->get('/foo')
+    $client->get('/foo');
+    $client->get('/foo', headers => [ foo => 'bar' ]);
 
 Makes an HTTP POST request.
 
 =head2 post
 
-    $client->post('/foo', { some => 'data' })
+    $client->post('/foo', { some => 'data' });
+    $client->post('/foo', { some => 'data' }, headers => [foo => 'bar']);
 
 Makes an HTTP POST request.
 
 =head2 put
 
-    $client->put('/foo', { some => 'data' })
+    $client->put('/foo', { some => 'data' });
 
 Makes an HTTP PUT request.
 
 =head2 delete
 
-    $client->delete('/foo')
+    $client->delete('/foo');
 
 Makes an HTTP DELETE request.
 
