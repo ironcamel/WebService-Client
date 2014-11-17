@@ -75,16 +75,16 @@ around qw(delete get post put) => sub {
 sub req {
     my ($self, $req) = @_;
     $req->header(content_type => $self->content_type);
-    $self->_log_request($req);
+    $self->log($req->as_string);
     my $res = $self->ua->request($req);
     Moo::Role->apply_roles_to_object($res, 'HTTP::Response::Stringable');
-    $self->_log_response($res);
+    $self->log($res->as_string);
 
     my $retries = $self->retries;
     while ($res->code =~ /^5/ and $retries--) {
         sleep 1;
         $res = $self->ua->request($req);
-        $self->_log_response($res);
+        $self->log($res->as_string);
     }
 
     return undef if $req->method eq 'GET' and $res->code =~ /404|410/;
@@ -95,19 +95,6 @@ sub req {
 sub _url {
     my ($self, $path) = @_;
     return $path =~ /^http/ ? $path : $self->base_url . $path;
-}
-
-sub _log_request {
-    my ($self, $req) = @_;
-    $self->log($req->method . ' => ' . $req->uri);
-    my $content = $req->content;
-    return unless length $content;
-    $self->log($content);
-}
-
-sub _log_response {
-    my ($self, $res) = @_;
-    $self->log("$res");
 }
 
 sub log {
