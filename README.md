@@ -97,33 +97,37 @@ response data, assuming the response body contained any data.
 This will usually be a hashref.
 If the web service responds with a failure, then the corresponding HTTP
 response object is thrown as an exception.
-This exception is simply an [HTTP::Response](http://search.cpan.org/perldoc?HTTP::Response) object that can be stringified.
-HTTP responses with a status code of 404 or 410 will not result in an exception.
-Instead, the corresponding methods will simply return `undef`.
-The reasoning behind this is that GET'ing a resource that does not exist
-does not warrant an exception.
+This exception is a [HTTP::Response](http://search.cpan.org/perldoc?HTTP::Response) object that has the
+[HTTP::Response::Stringable](http://search.cpan.org/perldoc?HTTP::Response::Stringable) role so it can be stringified.
+GET requests that result in 404 or 410 will not result in an exception.
+Instead, they will simply return `undef`.
+
+The \`get/post/put/delete\` methods all can take an optional headers keyword
+argument that is an arrayref of custom headers.
 
 ## get
 
-    $client->get('/foo')
+    $client->get('/foo');
+    $client->get('/foo', headers => [ foo => 'bar' ]);
 
 Makes an HTTP POST request.
 
 ## post
 
-    $client->post('/foo', { some => 'data' })
+    $client->post('/foo', { some => 'data' });
+    $client->post('/foo', { some => 'data' }, headers => [foo => 'bar']);
 
 Makes an HTTP POST request.
 
 ## put
 
-    $client->put('/foo', { some => 'data' })
+    $client->put('/foo', { some => 'data' });
 
 Makes an HTTP PUT request.
 
 ## delete
 
-    $client->delete('/foo')
+    $client->delete('/foo');
 
 Makes an HTTP DELETE request.
 
