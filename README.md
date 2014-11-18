@@ -103,7 +103,7 @@ GET requests that result in 404 or 410 will not result in an exception.
 Instead, they will simply return `undef`.
 
 The \`get/post/put/delete\` methods all can take an optional headers keyword
-argument that is an arrayref of custom headers.
+argument that is an arrayref or hashref of custom headers.
 
 ## get
 
@@ -115,7 +115,7 @@ Makes an HTTP POST request.
 ## post
 
     $client->post('/foo', { some => 'data' });
-    $client->post('/foo', { some => 'data' }, headers => [foo => 'bar']);
+    $client->post('/foo', { some => 'data' }, headers => { foo => 'bar' });
 
 Makes an HTTP POST request.
 

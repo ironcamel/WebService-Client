@@ -3,6 +3,7 @@ use Moo::Role;
 
 # VERSION
 
+use Carp qw(croak);
 use HTTP::Request::Common qw(DELETE GET POST PUT);
 use JSON qw(decode_json encode_json);
 use LWP::UserAgent;
@@ -34,43 +35,37 @@ has content_type => (
 sub get {
     my ($self, $path, $params, %args) = @_;
     $params ||= {};
-    my $headers = $args{headers} || [];
+    my @headers = $self->_headers(%args);
+    my $url = $self->_url($path);
     my $q = '';
     if (%$params) {
         $q = '?' . join '&', map { "$_=$params->{$_}" } keys %$params;
     }
-    return $self->req(GET "$path$q", @$headers);
+    return $self->req(GET "$url$q", @headers);
 }
 
 sub post {
     my ($self, $path, $params, %args) = @_;
-    my $headers = $args{headers} || [];
+    my @headers = $self->_headers(%args);
+    my $url = $self->_url($path);
     $params = encode_json $params if $params and $self->content_type =~ /json/;
-    return $self->req(POST $path, @$headers, content => $params);
+    return $self->req(POST $url, @headers, content => $params);
 }
 
 sub put {
     my ($self, $path, $params, %args) = @_;
-    my $headers = $args{headers} || [];
+    my @headers = $self->_headers(%args);
+    my $url = $self->_url($path);
     $params = encode_json $params if $params and $self->content_type =~ /json/;
-    return $self->req(PUT $path, @$headers, content => $params);
+    return $self->req(PUT $url, @headers, content => $params);
 }
 
 sub delete {
     my ($self, $path, %args) = @_;
-    my $headers = $args{headers} || [];
-    return $self->req(DELETE $path, @$headers);
-}
-
-# Prefix the path param of the http methods with the base_url
-around qw(delete get post put) => sub {
-    my $orig = shift;
-    my $self = shift;
-    my $path = shift;
-    die 'Path is missing' unless $path;
+    my @headers = $self->_headers(%args);
     my $url = $self->_url($path);
-    return $self->$orig($url, @_);
-};
+    return $self->req(DELETE $url, @headers);
+}
 
 sub req {
     my ($self, $req) = @_;
@@ -94,7 +89,20 @@ sub req {
 
 sub _url {
     my ($self, $path) = @_;
+    croak 'The path is missing' unless defined $path;
     return $path =~ /^http/ ? $path : $self->base_url . $path;
+}
+
+sub _headers {
+    my ($self, %args) = @_;
+    my $headers = $args{headers} or return;
+    if ('ARRAY' eq ref $headers) {
+        return @$headers;
+    } elsif ('HASH' eq ref $headers) {
+        return %$headers;
+    } else {
+        croak 'The headers param must be an arrayref or hashref';
+    }
 }
 
 sub log {
@@ -202,7 +210,7 @@ GET requests that result in 404 or 410 will not result in an exception.
 Instead, they will simply return C<undef>.
 
 The `get/post/put/delete` methods all can take an optional headers keyword
-argument that is an arrayref of custom headers.
+argument that is an arrayref or hashref of custom headers.
 
 =head2 get
 
@@ -214,7 +222,7 @@ Makes an HTTP POST request.
 =head2 post
 
     $client->post('/foo', { some => 'data' });
-    $client->post('/foo', { some => 'data' }, headers => [foo => 'bar']);
+    $client->post('/foo', { some => 'data' }, headers => { foo => 'bar' });
 
 Makes an HTTP POST request.
 
