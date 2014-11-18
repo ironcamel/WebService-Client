@@ -4,7 +4,7 @@ WebService::Client - A base role for quickly and easily creating web service cli
 
 # VERSION
 
-version 0.0200
+version 0.0201
 
 # SYNOPSIS
 
@@ -103,12 +103,12 @@ GET requests that result in 404 or 410 will not result in an exception.
 Instead, they will simply return `undef`.
 
 The \`get/post/put/delete\` methods all can take an optional headers keyword
-argument that is an arrayref or hashref of custom headers.
+argument that is a hashref of custom headers.
 
 ## get
 
     $client->get('/foo');
-    $client->get('/foo', headers => [ foo => 'bar' ]);
+    $client->get('/foo', headers => { foo => 'bar' });
 
 Makes an HTTP POST request.
 
