@@ -35,41 +35,40 @@ has content_type => (
 sub get {
     my ($self, $path, $params, %args) = @_;
     $params ||= {};
-    my @headers = $self->_headers(%args);
+    my $headers = $self->_headers(%args);
     my $url = $self->_url($path);
     my $q = '';
     if (%$params) {
         $q = '?' . join '&', map { "$_=$params->{$_}" } keys %$params;
     }
-    return $self->req(GET "$url$q", @headers);
+    return $self->req(GET "$url$q", %$headers);
 }
 
 sub post {
     my ($self, $path, $params, %args) = @_;
-    my @headers = $self->_headers(%args);
+    my $headers = $self->_headers(%args);
     my $url = $self->_url($path);
     $params = encode_json $params if $params and $self->content_type =~ /json/;
-    return $self->req(POST $url, @headers, content => $params);
+    return $self->req(POST $url, %$headers, content => $params);
 }
 
 sub put {
     my ($self, $path, $params, %args) = @_;
-    my @headers = $self->_headers(%args);
+    my $headers = $self->_headers(%args);
     my $url = $self->_url($path);
     $params = encode_json $params if $params and $self->content_type =~ /json/;
-    return $self->req(PUT $url, @headers, content => $params);
+    return $self->req(PUT $url, %$headers, content => $params);
 }
 
 sub delete {
     my ($self, $path, %args) = @_;
-    my @headers = $self->_headers(%args);
+    my $headers = $self->_headers(%args);
     my $url = $self->_url($path);
-    return $self->req(DELETE $url, @headers);
+    return $self->req(DELETE $url, %$headers);
 }
 
 sub req {
     my ($self, $req) = @_;
-    $req->header(content_type => $self->content_type);
     $self->log($req->as_string);
     my $res = $self->ua->request($req);
     Moo::Role->apply_roles_to_object($res, 'HTTP::Response::Stringable');
@@ -95,14 +94,11 @@ sub _url {
 
 sub _headers {
     my ($self, %args) = @_;
-    my $headers = $args{headers} or return;
-    if ('ARRAY' eq ref $headers) {
-        return @$headers;
-    } elsif ('HASH' eq ref $headers) {
-        return %$headers;
-    } else {
-        croak 'The headers param must be an arrayref or hashref';
-    }
+    my $headers = $args{headers} || {};
+    croak 'The headers param must be a hashref' unless 'HASH' eq ref $headers;
+    $headers->{content_type} = $self->content_type
+        unless grep /content.type/i, keys %$headers;
+    return $headers;
 }
 
 sub log {
@@ -210,12 +206,12 @@ GET requests that result in 404 or 410 will not result in an exception.
 Instead, they will simply return C<undef>.
 
 The `get/post/put/delete` methods all can take an optional headers keyword
-argument that is an arrayref or hashref of custom headers.
+argument that is a hashref of custom headers.
 
 =head2 get
 
     $client->get('/foo');
-    $client->get('/foo', headers => [ foo => 'bar' ]);
+    $client->get('/foo', headers => { foo => 'bar' });
 
 Makes an HTTP POST request.
 
