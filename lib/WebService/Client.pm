@@ -288,6 +288,10 @@ L<WebService::Lob>
 
 L<WebService::SmartyStreets>
 
+=item *
+
+L<WebService::Stripe>
+
 =back
 
 =head1 SEE ALSO
