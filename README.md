@@ -4,7 +4,7 @@ WebService::Client - A base role for quickly and easily creating web service cli
 
 # VERSION
 
-version 0.0201
+version 0.0202
 
 # SYNOPSIS
 
