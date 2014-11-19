@@ -69,16 +69,16 @@ sub delete {
 
 sub req {
     my ($self, $req) = @_;
-    $self->log($req->as_string);
+    $self->_log_request($req);
     my $res = $self->ua->request($req);
     Moo::Role->apply_roles_to_object($res, 'HTTP::Response::Stringable');
-    $self->log($res->as_string);
+    $self->_log_response($res);
 
     my $retries = $self->retries;
     while ($res->code =~ /^5/ and $retries--) {
         sleep 1;
         $res = $self->ua->request($req);
-        $self->log($res->as_string);
+        $self->_log_response($res);
     }
 
     return undef if $req->method eq 'GET' and $res->code =~ /404|410/;
@@ -99,6 +99,16 @@ sub _headers {
     $headers->{content_type} = $self->content_type
         unless grep /content.type/i, keys %$headers;
     return $headers;
+}
+
+sub _log_request {
+    my ($self, $req) = @_;
+    $self->log(ref($self) . " REQUEST:\n" . $req->as_string);
+}
+
+sub _log_response {
+    my ($self, $res) = @_;
+    $self->log(ref($self) . " RESPONSE:\n" . $res->as_string);
 }
 
 sub log {
