@@ -4,7 +4,7 @@ WebService::Client - A base role for quickly and easily creating web service cli
 
 # VERSION
 
-version 0.0202
+version 0.0203
 
 # SYNOPSIS
 
@@ -55,39 +55,6 @@ Every time I created a web service client, I noticed that I kept rewriting the
 same boilerplate code independent of the web service.
 This module does the boring boilerplate for you so you can just focus on
 the fun part - writing the web service specific code.
-
-It is important to note that this only supports JSON based web services.
-If your web service does not support JSON, then I am sorry.
-
-# ATTRIBUTES
-
-## base\_url
-
-This is the only attribute that is required.
-This is the base url that all request will be made against.
-
-## ua
-
-Optional. A proper default LWP::UserAgent will be created for you.
-
-## timeout
-
-Optional.
-Default is 10.
-
-## retries
-
-Optional.
-Default is 0.
-
-## logger
-
-Optional.
-
-## content\_type
-
-Optional.
-Default is `'application/json'`.
 
 # METHODS
 
@@ -152,6 +119,36 @@ Here is a contrived example:
 
 Logs a message using the provided logger.
 
+# ATTRIBUTES
+
+## base\_url
+
+This is the only attribute that is required.
+This is the base url that all request will be made against.
+
+## ua
+
+Optional. A proper default LWP::UserAgent will be created for you.
+
+## timeout
+
+Optional.
+Default is 10.
+
+## retries
+
+Optional.
+Default is 0.
+
+## logger
+
+Optional.
+
+## content\_type
+
+Optional.
+Default is `'application/json'`.
+
 # EXAMPLES
 
 Here are some examples of web service clients built with this role.
@@ -161,6 +158,7 @@ You can view their source to help you get started.
 - [WebService::HipChat](http://search.cpan.org/perldoc?WebService::HipChat)
 - [WebService::Lob](http://search.cpan.org/perldoc?WebService::Lob)
 - [WebService::SmartyStreets](http://search.cpan.org/perldoc?WebService::SmartyStreets)
+- [WebService::Stripe](http://search.cpan.org/perldoc?WebService::Stripe)
 
 # SEE ALSO
 

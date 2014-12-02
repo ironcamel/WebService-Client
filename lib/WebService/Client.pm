@@ -48,16 +48,14 @@ sub post {
     my ($self, $path, $params, %args) = @_;
     my $headers = $self->_headers(%args);
     my $url = $self->_url($path);
-    $params = encode_json $params if $params and $self->content_type =~ /json/;
-    return $self->req(POST $url, %$headers, content => $params);
+    return $self->req(POST $url, %$headers, _content($params, $headers));
 }
 
 sub put {
     my ($self, $path, $params, %args) = @_;
     my $headers = $self->_headers(%args);
     my $url = $self->_url($path);
-    $params = encode_json $params if $params and $self->content_type =~ /json/;
-    return $self->req(PUT $url, %$headers, content => $params);
+    return $self->req(PUT $url, %$headers, _content($params, $headers));
 }
 
 sub delete {
@@ -86,6 +84,12 @@ sub req {
     return $res->content ? decode_json($res->content) : 1;
 }
 
+sub log {
+    my ($self, $msg) = @_;
+    return unless $self->logger;
+    $self->logger->DEBUG($msg);
+}
+
 sub _url {
     my ($self, $path) = @_;
     croak 'The path is missing' unless defined $path;
@@ -97,7 +101,7 @@ sub _headers {
     my $headers = $args{headers} || {};
     croak 'The headers param must be a hashref' unless 'HASH' eq ref $headers;
     $headers->{content_type} = $self->content_type
-        unless grep /content.type/i, keys %$headers;
+        unless _content_type($headers);
     return $headers;
 }
 
@@ -111,10 +115,21 @@ sub _log_response {
     $self->log(ref($self) . " RESPONSE:\n" . $res->as_string);
 }
 
-sub log {
-    my ($self, $msg) = @_;
-    return unless $self->logger;
-    $self->logger->DEBUG($msg);
+sub _content_type {
+    my ($headers) = @_;
+    return $headers->{'Content-Type'}
+        || $headers->{'content-type'}
+        || $headers->{content_type};
+}
+
+sub _content {
+    my ($params, $headers) = @_;
+    my @content;
+    if (defined $params) {
+        $params = encode_json $params if _content_type($headers) =~ /json/;
+        @content = ( content => $params );
+    }
+    return @content;
 }
 
 # ABSTRACT: A base role for quickly and easily creating web service clients
@@ -168,39 +183,6 @@ Every time I created a web service client, I noticed that I kept rewriting the
 same boilerplate code independent of the web service.
 This module does the boring boilerplate for you so you can just focus on
 the fun part - writing the web service specific code.
-
-It is important to note that this only supports JSON based web services.
-If your web service does not support JSON, then I am sorry.
-
-=head1 ATTRIBUTES
-
-=head2 base_url
-
-This is the only attribute that is required.
-This is the base url that all request will be made against.
-
-=head2 ua
-
-Optional. A proper default LWP::UserAgent will be created for you.
-
-=head2 timeout
-
-Optional.
-Default is 10.
-
-=head2 retries
-
-Optional.
-Default is 0.
-
-=head2 logger
-
-Optional.
-
-=head2 content_type
-
-Optional.
-Default is C<'application/json'>.
 
 =head1 METHODS
 
@@ -264,6 +246,36 @@ Here is a contrived example:
 =head2 log
 
 Logs a message using the provided logger.
+
+=head1 ATTRIBUTES
+
+=head2 base_url
+
+This is the only attribute that is required.
+This is the base url that all request will be made against.
+
+=head2 ua
+
+Optional. A proper default LWP::UserAgent will be created for you.
+
+=head2 timeout
+
+Optional.
+Default is 10.
+
+=head2 retries
+
+Optional.
+Default is 0.
+
+=head2 logger
+
+Optional.
+
+=head2 content_type
+
+Optional.
+Default is C<'application/json'>.
 
 =head1 EXAMPLES
 
