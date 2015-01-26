@@ -203,7 +203,6 @@ argument that is a hashref of custom headers.
 =head2 get
 
     $client->get('/foo');
-    $client->get('/foo', headers => { foo => 'bar' });
 
 Makes an HTTP POST request.
 

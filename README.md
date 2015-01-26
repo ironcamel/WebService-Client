@@ -4,7 +4,7 @@ WebService::Client - A base role for quickly and easily creating web service cli
 
 # VERSION
 
-version 0.0203
+version 0.0204
 
 # SYNOPSIS
 
@@ -64,8 +64,8 @@ response data, assuming the response body contained any data.
 This will usually be a hashref.
 If the web service responds with a failure, then the corresponding HTTP
 response object is thrown as an exception.
-This exception is a [HTTP::Response](http://search.cpan.org/perldoc?HTTP::Response) object that has the
-[HTTP::Response::Stringable](http://search.cpan.org/perldoc?HTTP::Response::Stringable) role so it can be stringified.
+This exception is a [HTTP::Response](https://metacpan.org/pod/HTTP::Response) object that has the
+[HTTP::Response::Stringable](https://metacpan.org/pod/HTTP::Response::Stringable) role so it can be stringified.
 GET requests that result in 404 or 410 will not result in an exception.
 Instead, they will simply return `undef`.
 
@@ -75,7 +75,6 @@ argument that is a hashref of custom headers.
 ## get
 
     $client->get('/foo');
-    $client->get('/foo', headers => { foo => 'bar' });
 
 Makes an HTTP POST request.
 
@@ -154,16 +153,16 @@ Default is `'application/json'`.
 Here are some examples of web service clients built with this role.
 You can view their source to help you get started.
 
-- [Business::BalancedPayments](http://search.cpan.org/perldoc?Business::BalancedPayments)
-- [WebService::HipChat](http://search.cpan.org/perldoc?WebService::HipChat)
-- [WebService::Lob](http://search.cpan.org/perldoc?WebService::Lob)
-- [WebService::SmartyStreets](http://search.cpan.org/perldoc?WebService::SmartyStreets)
-- [WebService::Stripe](http://search.cpan.org/perldoc?WebService::Stripe)
+- [Business::BalancedPayments](https://metacpan.org/pod/Business::BalancedPayments)
+- [WebService::HipChat](https://metacpan.org/pod/WebService::HipChat)
+- [WebService::Lob](https://metacpan.org/pod/WebService::Lob)
+- [WebService::SmartyStreets](https://metacpan.org/pod/WebService::SmartyStreets)
+- [WebService::Stripe](https://metacpan.org/pod/WebService::Stripe)
 
 # SEE ALSO
 
-- [Net::HTTP::API](http://search.cpan.org/perldoc?Net::HTTP::API)
-- [Role::REST::Client](http://search.cpan.org/perldoc?Role::REST::Client)
+- [Net::HTTP::API](https://metacpan.org/pod/Net::HTTP::API)
+- [Role::REST::Client](https://metacpan.org/pod/Role::REST::Client)
 
 # AUTHOR
 
