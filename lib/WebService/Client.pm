@@ -213,6 +213,8 @@ argument that is a hashref of custom headers.
 =head2 get
 
     $client->get('/foo');
+    $client->get('/foo', { query => 'params' });
+    $client->get('/foo', { query => [qw(array params)] });
 
 Makes an HTTP POST request.
 

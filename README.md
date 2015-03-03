@@ -4,7 +4,7 @@ WebService::Client - A base role for quickly and easily creating web service cli
 
 # VERSION
 
-version 0.0204
+version 0.0300
 
 # SYNOPSIS
 
@@ -75,6 +75,8 @@ argument that is a hashref of custom headers.
 ## get
 
     $client->get('/foo');
+    $client->get('/foo', { query => 'params' });
+    $client->get('/foo', { query => [qw(array params)] });
 
 Makes an HTTP POST request.
 
