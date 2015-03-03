@@ -39,7 +39,17 @@ sub get {
     my $url = $self->_url($path);
     my $q = '';
     if (%$params) {
-        $q = '?' . join '&', map { "$_=$params->{$_}" } keys %$params;
+        my @items;
+        while (my ($key, $value) = each %$params) {
+            if ('ARRAY' eq ref $value) {
+                push @items, map "$key\[]=$_", @$value;
+            } else {
+                push @items, "$key=$value";
+            }
+        }
+        if (@items) {
+            $q = '?' . join '&', @items;
+        }
     }
     return $self->req(GET "$url$q", %$headers);
 }
