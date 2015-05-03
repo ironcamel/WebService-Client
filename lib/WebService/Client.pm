@@ -27,6 +27,8 @@ has retries => ( is => 'ro', default => 0 );
 
 has logger => ( is => 'ro' );
 
+has log_method => ( is => 'ro', default => 'DEBUG' );
+
 has content_type => (
     is      => 'rw',
     default => 'application/json',
@@ -97,7 +99,8 @@ sub req {
 sub log {
     my ($self, $msg) = @_;
     return unless $self->logger;
-    $self->logger->DEBUG($msg);
+    my $log_method = $self->log_method;
+    $self->logger->$log_method($msg);
 }
 
 sub _url {
@@ -180,6 +183,7 @@ sub _content {
     my $client = WebService::Foo->new(
         auth_token => 'abc',
         logger     => Log::Tiny->new('/tmp/foo.log'), # optional
+        log_method => 'info', # optional, defaults to 'DEBUG'
         timeout    => 10, # optional, defaults to 10
         retries    => 0,  # optional, defaults to 0
     );
