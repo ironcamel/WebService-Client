@@ -80,20 +80,17 @@ sub delete {
 sub req {
     my ($self, $req) = @_;
     $self->_log_request($req);
-    my $res = $self->ua->request($req);
-    Moo::Role->apply_roles_to_object($res, 'HTTP::Response::Stringable');
-    $self->_log_response($res);
 
-    my $retries = $self->retries;
-    while ($res->code =~ /^5/ and $retries--) {
-        sleep 1;
+    my ($res, $num_attempts) = (undef, 0);
+    do {
+        sleep 1 if $num_attempts > 0;
         $res = $self->ua->request($req);
         $self->_log_response($res);
     }
+    while ($self->_is_retryable($req, $res, ++$num_attempts));
 
-    return undef if $req->method eq 'GET' and $res->code =~ /404|410/;
-    die $res unless $res->is_success;
-    return $res->content ? decode_json($res->content) : 1;
+    $self->prepare_response($res, $req, $num_attempts);
+    return $self->parse_response($res, $req, $num_attempts);
 }
 
 sub log {
@@ -101,6 +98,26 @@ sub log {
     return unless $self->logger;
     my $log_method = $self->log_method;
     $self->logger->$log_method($msg);
+}
+
+sub prepare_response {
+    my ($self, $res, $req, $num_attempts) = @_;
+    Moo::Role->apply_roles_to_object($res, 'HTTP::Response::Stringable');
+    return;
+}
+
+sub parse_response {
+    my ($self, $res, $req, $num_attempts) = @_;
+
+    return undef if $req->method eq 'GET' && $res->code =~ qr/ 404 | 410 /x;
+    die $res if not $res->is_success;
+    return decode_json($res->content) if $res->content;
+    return 1;
+}
+
+sub _is_retryable {
+    my ($self, $req, $res, $num_attempts) = @_;
+    return ($res->is_server_error and $num_attempts <= $self->retries);
 }
 
 sub _url {
