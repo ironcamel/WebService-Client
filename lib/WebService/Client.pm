@@ -81,7 +81,6 @@ sub req {
     my ($self, $req) = @_;
     $self->_log_request($req);
     my $res = $self->ua->request($req);
-    Moo::Role->apply_roles_to_object($res, 'HTTP::Response::Stringable');
     $self->_log_response($res);
 
     my $retries = $self->retries;
@@ -92,6 +91,7 @@ sub req {
     }
 
     return undef if $req->method eq 'GET' and $res->code =~ /404|410/;
+    $self->prepare_response($res);
     die $res unless $res->is_success;
     return $res->content ? decode_json($res->content) : 1;
 }
@@ -101,6 +101,12 @@ sub log {
     return unless $self->logger;
     my $log_method = $self->log_method;
     $self->logger->$log_method($msg);
+}
+
+sub prepare_response {
+    my ($self, $res) = @_;
+    Moo::Role->apply_roles_to_object($res, 'HTTP::Response::Stringable');
+    return;
 }
 
 sub _url {
