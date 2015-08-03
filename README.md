@@ -4,7 +4,7 @@ WebService::Client - A base role for quickly and easily creating web service cli
 
 # VERSION
 
-version 0.0300
+version 0.0400
 
 # SYNOPSIS
 
@@ -42,6 +42,7 @@ version 0.0300
     my $client = WebService::Foo->new(
         auth_token => 'abc',
         logger     => Log::Tiny->new('/tmp/foo.log'), # optional
+        log_method => 'info', # optional, defaults to 'DEBUG'
         timeout    => 10, # optional, defaults to 10
         retries    => 0,  # optional, defaults to 0
     );
@@ -60,17 +61,46 @@ the fun part - writing the web service specific code.
 
 These are the methods this role composes into your class.
 The HTTP methods (get, post, put, and delete) will return the deserialized
-response data, assuming the response body contained any data.
+response data, if the response body contained any data.
 This will usually be a hashref.
 If the web service responds with a failure, then the corresponding HTTP
 response object is thrown as an exception.
 This exception is a [HTTP::Response](https://metacpan.org/pod/HTTP::Response) object that has the
-[HTTP::Response::Stringable](https://metacpan.org/pod/HTTP::Response::Stringable) role so it can be stringified.
-GET requests that result in 404 or 410 will not result in an exception.
+[HTTP::Response::Stringable](https://metacpan.org/pod/HTTP::Response::Stringable) role so it can be easily logged.
+GET requests that respond with a status code of `404` or `410` will not
+throw an exception.
 Instead, they will simply return `undef`.
 
-The \`get/post/put/delete\` methods all can take an optional headers keyword
-argument that is a hashref of custom headers.
+The http methods `get/post/put/delete` can all take the following optional
+named arguments:
+
+- headers
+
+    A hashref of custom headers to send for this request.
+    In the future, this may also accept an arrayref.
+    The header values can be any format that [HTTP::Headers](https://metacpan.org/pod/HTTP::Headers) recognizes,
+    so you can pass `content_type` instead of `Content-Type`.
+
+- serializer
+
+    A coderef that does custom serialization for this request.
+    Set this to `undef` if you don't want any serialization to happen for this
+    request.
+
+- deserializer
+
+    A coderef that does custom deserialization for this request.
+    Set this to `undef` if you want the raw http response body to be returned.
+
+Example:
+
+    $client->post(
+        /widgets,
+        { color => 'blue' },
+        headers      => { x_custom_header => 'blah' },
+        serializer   => sub { ... },
+        deserialized => sub { ... },
+    }
 
 ## get
 
@@ -78,7 +108,7 @@ argument that is a hashref of custom headers.
     $client->get('/foo', { query => 'params' });
     $client->get('/foo', { query => [qw(array params)] });
 
-Makes an HTTP POST request.
+Makes an HTTP GET request.
 
 ## post
 
@@ -149,6 +179,18 @@ Optional.
 
 Optional.
 Default is `'application/json'`.
+
+## serializer
+
+Optional.
+A coderef that serializes the request content.
+Set this to `undef` if you don't want any serialization to happen.
+
+## deserializer
+
+Optional.
+A coderef that deserializes the response body.
+Set this to `undef` if you want the raw http response body to be returned.
 
 # EXAMPLES
 
