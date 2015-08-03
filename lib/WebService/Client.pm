@@ -13,12 +13,7 @@ has base_url => ( is => 'ro', required => 1 );
 has ua => (
     is      => 'ro',
     lazy    => 1,
-    default => sub {
-        my $self = shift;
-        my $ua = LWP::UserAgent->new;
-        $ua->timeout($self->timeout);
-        return $ua;
-    },
+    default => sub { LWP::UserAgent->new(timeout => shift->timeout) },
 );
 
 has timeout => ( is => 'ro', default => 10 );
@@ -34,10 +29,27 @@ has content_type => (
     default => 'application/json',
 );
 
+has deserializer => ( is => 'ro', default => sub {
+    sub {
+        my ($res, %args) = @_;
+        return decode_json $res->content;
+    }
+});
+
+has serializer => ( is => 'ro', default => sub {
+    sub {
+        my ($data, %args) = @_;
+        # TODO: remove the next line after clients are updated to inject custom
+        # serializers that will handle this logic
+        return $data unless _content_type($args{headers}) =~ /json/;
+        return encode_json $data;
+    }
+});
+
 sub get {
     my ($self, $path, $params, %args) = @_;
     $params ||= {};
-    my $headers = $self->_headers(%args);
+    my $headers = $self->_headers(\%args);
     my $url = $self->_url($path);
     my $q = '';
     if (%$params) {
@@ -53,32 +65,36 @@ sub get {
             $q = '?' . join '&', @items;
         }
     }
-    return $self->req(GET "$url$q", %$headers);
+    my $req = GET "$url$q", %$headers;
+    return $self->req($req, %args);
 }
 
 sub post {
-    my ($self, $path, $params, %args) = @_;
-    my $headers = $self->_headers(%args);
+    my ($self, $path, $data, %args) = @_;
+    my $headers = $self->_headers(\%args);
     my $url = $self->_url($path);
-    return $self->req(POST $url, %$headers, _content($params, $headers));
+    my $req = POST $url, %$headers, $self->_content($data, %args);
+    return $self->req($req, %args);
 }
 
 sub put {
-    my ($self, $path, $params, %args) = @_;
-    my $headers = $self->_headers(%args);
+    my ($self, $path, $data, %args) = @_;
+    my $headers = $self->_headers(\%args);
     my $url = $self->_url($path);
-    return $self->req(PUT $url, %$headers, _content($params, $headers));
+    my $req = PUT $url, %$headers, $self->_content($data, %args);
+    return $self->req($req, %args);
 }
 
 sub delete {
     my ($self, $path, %args) = @_;
-    my $headers = $self->_headers(%args);
+    my $headers = $self->_headers(\%args);
     my $url = $self->_url($path);
-    return $self->req(DELETE $url, %$headers);
+    my $req = DELETE $url, %$headers;
+    return $self->req($req, %args);
 }
 
 sub req {
-    my ($self, $req) = @_;
+    my ($self, $req, %args) = @_;
     $self->_log_request($req);
     my $res = $self->ua->request($req);
     $self->_log_response($res);
@@ -93,7 +109,16 @@ sub req {
     return undef if $req->method eq 'GET' and $res->code =~ /404|410/;
     $self->prepare_response($res);
     die $res unless $res->is_success;
-    return $res->content ? decode_json($res->content) : 1;
+    return 1 unless $res->content;
+    my $des = $self->deserializer;
+    $des = $args{deserializer} if exists $args{deserializer};
+    if ($des) {
+        die "deserializer must be a coderef or undef"
+            unless "CODE" eq ref $des;
+        return $des->($res, %args);
+    } else {
+        return $res->content;
+    }
 }
 
 sub log {
@@ -116,8 +141,8 @@ sub _url {
 }
 
 sub _headers {
-    my ($self, %args) = @_;
-    my $headers = $args{headers} || {};
+    my ($self, $args) = @_;
+    my $headers = $args->{headers} ||= {};
     croak 'The headers param must be a hashref' unless 'HASH' eq ref $headers;
     $headers->{content_type} = $self->content_type
         unless _content_type($headers);
@@ -142,11 +167,17 @@ sub _content_type {
 }
 
 sub _content {
-    my ($params, $headers) = @_;
+    my ($self, $data, %args) = @_;
     my @content;
-    if (defined $params) {
-        $params = encode_json $params if _content_type($headers) =~ /json/;
-        @content = ( content => $params );
+    if (defined $data) {
+        my $ser = $self->serializer;
+        $ser = $args{serializer} if exists $args{serializer};
+        if ($ser) {
+            die "serializer must be a coderef or undef"
+                unless "CODE" eq ref $ser;
+            $data = $ser->($data, %args);
+        }
+        @content = ( content => $data );
     }
     return @content;
 }
@@ -208,17 +239,50 @@ the fun part - writing the web service specific code.
 
 These are the methods this role composes into your class.
 The HTTP methods (get, post, put, and delete) will return the deserialized
-response data, assuming the response body contained any data.
+response data, if the response body contained any data.
 This will usually be a hashref.
 If the web service responds with a failure, then the corresponding HTTP
 response object is thrown as an exception.
 This exception is a L<HTTP::Response> object that has the
-L<HTTP::Response::Stringable> role so it can be stringified.
-GET requests that result in 404 or 410 will not result in an exception.
+L<HTTP::Response::Stringable> role so it can be easily logged.
+GET requests that respond with a status code of C<404> or C<410> will not
+throw an exception.
 Instead, they will simply return C<undef>.
 
-The `get/post/put/delete` methods all can take an optional headers keyword
-argument that is a hashref of custom headers.
+The http methods C<get/post/put/delete> can all take the following optional
+named arguments:
+
+=over
+
+=item headers
+
+A hashref of custom headers to send for this request.
+In the future, this may also accept an arrayref.
+The header values can be any format that L<HTTP::Headers> recognizes,
+so you can pass C<content_type> instead of C<Content-Type>.
+
+=item serializer
+
+A coderef that does custom serialization for this request.
+Set this to C<undef> if you don't want any serialization to happen for this
+request.
+
+=item deserializer
+
+A coderef that does custom deserialization for this request.
+Set this to C<undef> if you want the raw http response body to be returned.
+
+=back
+
+Example:
+
+    $client->post(
+        /widgets,
+        { color => 'blue' },
+        headers      => { x_custom_header => 'blah' },
+        serializer   => sub { ... },
+        deserialized => sub { ... },
+    }
 
 =head2 get
 
@@ -226,7 +290,7 @@ argument that is a hashref of custom headers.
     $client->get('/foo', { query => 'params' });
     $client->get('/foo', { query => [qw(array params)] });
 
-Makes an HTTP POST request.
+Makes an HTTP GET request.
 
 =head2 post
 
@@ -297,6 +361,18 @@ Optional.
 
 Optional.
 Default is C<'application/json'>.
+
+=head2 serializer
+
+Optional.
+A coderef that serializes the request content.
+Set this to C<undef> if you don't want any serialization to happen.
+
+=head2 deserializer
+
+Optional.
+A coderef that deserializes the response body.
+Set this to C<undef> if you want the raw http response body to be returned.
 
 =head1 EXAMPLES
 
