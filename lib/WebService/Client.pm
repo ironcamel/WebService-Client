@@ -4,6 +4,7 @@ use Moo::Role;
 # VERSION
 
 use Carp qw(croak);
+use HTTP::Request;
 use HTTP::Request::Common qw(DELETE GET POST PUT);
 use JSON qw(decode_json encode_json);
 use LWP::UserAgent;
@@ -82,6 +83,15 @@ sub put {
     my $headers = $self->_headers(\%args);
     my $url = $self->_url($path);
     my $req = PUT $url, %$headers, $self->_content($data, %args);
+    return $self->req($req, %args);
+}
+
+sub patch {
+    my ($self, $path, $data, %args) = @_;
+    my $headers = $self->_headers(\%args);
+    my $url = $self->_url($path);
+    my $req = HTTP::Request->new(
+        'PATCH', $url, [%$headers], $self->_content($data, %args));
     return $self->req($req, %args);
 }
 
