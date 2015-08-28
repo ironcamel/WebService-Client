@@ -90,8 +90,10 @@ sub patch {
     my ($self, $path, $data, %args) = @_;
     my $headers = $self->_headers(\%args);
     my $url = $self->_url($path);
+    my %content = $self->_content($data, %args);
     my $req = HTTP::Request->new(
-        'PATCH', $url, [%$headers], $self->_content($data, %args));
+        'PATCH', $url, [%$headers], $content{content}
+    );
     return $self->req($req, %args);
 }
 
