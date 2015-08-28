@@ -315,6 +315,12 @@ Makes an HTTP POST request.
 
 Makes an HTTP PUT request.
 
+=head2 patch
+
+    $client->patch('/foo', { some => 'data' });
+
+Makes an HTTP PATCH request.
+
 =head2 delete
 
     $client->delete('/foo');

@@ -20,6 +20,7 @@ my %WriteMakefileArgs = (
   "PREREQ_PM" => {
     "Carp" => 0,
     "HTTP::Message" => "6.06",
+    "HTTP::Request" => 0,
     "HTTP::Request::Common" => 0,
     "HTTP::Response::Stringable" => "0.0002",
     "JSON" => 0,
@@ -35,7 +36,7 @@ my %WriteMakefileArgs = (
     "strict" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.0400",
+  "VERSION" => "0.0500",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -47,6 +48,7 @@ my %FallbackPrereqs = (
   "ExtUtils::MakeMaker" => 0,
   "File::Spec" => 0,
   "HTTP::Message" => "6.06",
+  "HTTP::Request" => 0,
   "HTTP::Request::Common" => 0,
   "HTTP::Response::Stringable" => "0.0002",
   "IO::Handle" => 0,

@@ -4,7 +4,7 @@ WebService::Client - A base role for quickly and easily creating web service cli
 
 # VERSION
 
-version 0.0400
+version 0.0500
 
 # SYNOPSIS
 
@@ -122,6 +122,12 @@ Makes an HTTP POST request.
     $client->put('/foo', { some => 'data' });
 
 Makes an HTTP PUT request.
+
+## patch
+
+    $client->patch('/foo', { some => 'data' });
+
+Makes an HTTP PATCH request.
 
 ## delete
 
