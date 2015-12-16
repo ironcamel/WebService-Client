@@ -19,7 +19,15 @@ has ua => (
 
 has timeout => ( is => 'ro', default => 10 );
 
-has retries => ( is => 'ro', default => 0 );
+has retries => (
+    is      => 'ro',
+    default => 0,
+    isa     => sub {
+        my $r = shift;
+        die "retries must be a nonnegative integer"
+            unless defined $r and $r =~ /^\d+$/;
+    },
+);
 
 has logger => ( is => 'ro' );
 
