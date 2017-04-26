@@ -6,7 +6,7 @@ use Moo::Role;
 use Carp qw(croak);
 use HTTP::Request;
 use HTTP::Request::Common qw(DELETE GET POST PUT);
-use JSON qw(decode_json encode_json);
+use JSON::MaybeXS qw(decode_json encode_json);
 use LWP::UserAgent;
 
 has base_url => ( is => 'ro', required => 1 );
