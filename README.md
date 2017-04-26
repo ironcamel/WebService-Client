@@ -4,7 +4,7 @@ WebService::Client - A base role for quickly and easily creating web service cli
 
 # VERSION
 
-version 0.0501
+version 0.0502
 
 # SYNOPSIS
 
@@ -213,6 +213,11 @@ You can view their source to help you get started.
 
 - [Net::HTTP::API](https://metacpan.org/pod/Net::HTTP::API)
 - [Role::REST::Client](https://metacpan.org/pod/Role::REST::Client)
+
+# CONTRIBUTORS
+
+- Dean Hamstead <[https://github.com/djzort](https://github.com/djzort)>
+- Todd Wade <[https://github.com/trwww](https://github.com/trwww)>
 
 # AUTHOR
 

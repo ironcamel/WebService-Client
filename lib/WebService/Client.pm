@@ -443,6 +443,20 @@ L<Role::REST::Client>
 
 =back
 
+=head1 CONTRIBUTORS
+
+=over
+
+=item *
+
+Dean Hamstead <L<https://github.com/djzort>>
+
+=item *
+
+Todd Wade <L<https://github.com/trwww>>
+
+=back
+
 =cut
 
 1;
