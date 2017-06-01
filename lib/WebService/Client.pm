@@ -6,7 +6,7 @@ use Moo::Role;
 use Carp qw(croak);
 use HTTP::Request;
 use HTTP::Request::Common qw(DELETE GET POST PUT);
-use JSON::MaybeXS qw(decode_json encode_json);
+use JSON::MaybeXS;
 use LWP::UserAgent;
 
 has base_url => ( is => 'ro', required => 1 );
@@ -17,43 +17,67 @@ has ua => (
     default => sub { LWP::UserAgent->new(timeout => shift->timeout) },
 );
 
-has timeout => ( is => 'ro', default => 10 );
+has timeout => (
+    is      => 'ro',
+    default => 10
+);
 
 has retries => (
     is      => 'ro',
     default => 0,
     isa     => sub {
         my $r = shift;
-        die "retries must be a nonnegative integer"
-            unless defined $r and $r =~ /^\d+$/;
+        die 'retries must be a nonnegative integer'
+            unless defined $r and $r =~ m/^\d+$/;
     },
 );
 
 has logger => ( is => 'ro' );
 
-has log_method => ( is => 'ro', default => 'DEBUG' );
+has log_method => (
+    is      => 'ro',
+    default => 'DEBUG'
+);
 
 has content_type => (
     is      => 'rw',
     default => 'application/json',
 );
 
-has deserializer => ( is => 'ro', default => sub {
-    sub {
-        my ($res, %args) = @_;
-        return decode_json $res->content;
+has deserializer => (
+    is      => 'ro',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+        my $json = $self->json;
+        sub {
+            my ($res, %args) = @_;
+            return $json->decode_json($res->content);
+        }
     }
-});
+);
 
-has serializer => ( is => 'ro', default => sub {
-    sub {
-        my ($data, %args) = @_;
-        # TODO: remove the next line after clients are updated to inject custom
-        # serializers that will handle this logic
-        return $data unless _content_type($args{headers}) =~ /json/;
-        return encode_json $data;
+has serializer => (
+    is      => 'ro',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+        my $json = $self->json;
+        sub {
+            my ($data, %args) = @_;
+            # TODO: remove the next line after clients are updated to inject custom
+            # serializers that will handle this logic
+            return $data unless _content_type($args{headers}) =~ m/json/;
+            return $json->encode_json($data);
+        }
     }
-});
+);
+
+has json => (
+    is      => 'ro',
+    lazy    => 1,
+    default => sub { JSON::MaybeXS->new() },
+);
 
 sub get {
     my ($self, $path, $params, %args) = @_;
@@ -66,7 +90,8 @@ sub get {
         while (my ($key, $value) = each %$params) {
             if ('ARRAY' eq ref $value) {
                 push @items, map "$key\[]=$_", @$value;
-            } else {
+            }
+            else {
                 push @items, "$key=$value";
             }
         }
@@ -126,17 +151,18 @@ sub req {
         $self->_log_response($res);
     }
 
-    return undef if $req->method eq 'GET' and $res->code =~ /404|410/;
+    return undef if $req->method eq 'GET' and $res->code =~ m/404|410/;
     $self->prepare_response($res);
     die $res unless $res->is_success;
     return 1 unless $res->content;
     my $des = $self->deserializer;
     $des = $args{deserializer} if exists $args{deserializer};
     if ($des) {
-        die "deserializer must be a coderef or undef"
-            unless "CODE" eq ref $des;
+        die 'deserializer must be a coderef or undef'
+            unless 'CODE' eq ref $des;
         return $des->($res, %args);
-    } else {
+    }
+    else {
         return $res->content;
     }
 }
@@ -157,7 +183,7 @@ sub prepare_response {
 sub _url {
     my ($self, $path) = @_;
     croak 'The path is missing' unless defined $path;
-    return $path =~ /^http/ ? $path : $self->base_url . $path;
+    return $path =~ m/^http/ ? $path : $self->base_url . $path;
 }
 
 sub _headers {
@@ -193,8 +219,8 @@ sub _content {
         my $ser = $self->serializer;
         $ser = $args{serializer} if exists $args{serializer};
         if ($ser) {
-            die "serializer must be a coderef or undef"
-                unless "CODE" eq ref $ser;
+            die 'serializer must be a coderef or undef'
+                unless 'CODE' eq ref $ser;
             $data = $ser->($data, %args);
         }
         @content = ( content => $data );
@@ -368,6 +394,18 @@ This is the base url that all request will be made against.
 =head2 ua
 
 Optional. A proper default LWP::UserAgent will be created for you.
+
+=head2 json
+
+Optional. A proper default JSON object will be created via L<JSON::MaybeXS>
+
+You can use this method to mess around with decoding settings like this:
+
+ my $obj = WebService::Foo->new();
+ $obj->json->ascii;
+ $obj->json->pretty;
+ $obj->json->indent;
+ etc...
 
 =head2 timeout
 
