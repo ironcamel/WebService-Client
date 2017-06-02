@@ -4,7 +4,7 @@ WebService::Client - A base role for quickly and easily creating web service cli
 
 # VERSION
 
-version 0.0502
+version 0.0600
 
 # SYNOPSIS
 
@@ -166,6 +166,17 @@ This is the base url that all request will be made against.
 ## ua
 
 Optional. A proper default LWP::UserAgent will be created for you.
+
+## json
+
+Optional. A proper default JSON object will be created via [JSON::MaybeXS](https://metacpan.org/pod/JSON::MaybeXS)
+
+You can also pass in your own custom JSON object to have more control over
+the JSON settings:
+
+    my $client = WebService::Foo->new(
+        json => JSON::MaybeXS->new(utf8 => 1, pretty => 1)
+    );
 
 ## timeout
 

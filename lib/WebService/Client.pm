@@ -19,7 +19,7 @@ has ua => (
 
 has timeout => (
     is      => 'ro',
-    default => 10
+    default => 10,
 );
 
 has retries => (
@@ -28,7 +28,7 @@ has retries => (
     isa     => sub {
         my $r = shift;
         die 'retries must be a nonnegative integer'
-            unless defined $r and $r =~ m/^\d+$/;
+            unless defined $r and $r =~ /^\d+$/;
     },
 );
 
@@ -36,7 +36,7 @@ has logger => ( is => 'ro' );
 
 has log_method => (
     is      => 'ro',
-    default => 'DEBUG'
+    default => 'DEBUG',
 );
 
 has content_type => (
@@ -54,7 +54,7 @@ has deserializer => (
             my ($res, %args) = @_;
             return $json->decode_json($res->content);
         }
-    }
+    },
 );
 
 has serializer => (
@@ -65,9 +65,9 @@ has serializer => (
         my $json = $self->json;
         sub {
             my ($data, %args) = @_;
-            # TODO: remove the next line after clients are updated to inject custom
-            # serializers that will handle this logic
-            return $data unless _content_type($args{headers}) =~ m/json/;
+            # TODO: remove the next line after clients are updated to inject
+            # custom serializers that will handle this logic
+            return $data unless _content_type($args{headers}) =~ /json/;
             return $json->encode_json($data);
         }
     }
@@ -151,7 +151,7 @@ sub req {
         $self->_log_response($res);
     }
 
-    return undef if $req->method eq 'GET' and $res->code =~ m/404|410/;
+    return if $req->method eq 'GET' and $res->code =~ /404|410/;
     $self->prepare_response($res);
     die $res unless $res->is_success;
     return 1 unless $res->content;
@@ -183,7 +183,7 @@ sub prepare_response {
 sub _url {
     my ($self, $path) = @_;
     croak 'The path is missing' unless defined $path;
-    return $path =~ m/^http/ ? $path : $self->base_url . $path;
+    return $path =~ /^http/ ? $path : $self->base_url . $path;
 }
 
 sub _headers {
@@ -399,13 +399,12 @@ Optional. A proper default LWP::UserAgent will be created for you.
 
 Optional. A proper default JSON object will be created via L<JSON::MaybeXS>
 
-You can use this method to mess around with decoding settings like this:
+You can also pass in your own custom JSON object to have more control over
+the JSON settings:
 
- my $obj = WebService::Foo->new();
- $obj->json->ascii;
- $obj->json->pretty;
- $obj->json->indent;
- etc...
+    my $client = WebService::Foo->new(
+        json => JSON::MaybeXS->new(utf8 => 1, pretty => 1)
+    );
 
 =head2 timeout
 
