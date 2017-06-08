@@ -52,7 +52,7 @@ has deserializer => (
         my $json = $self->json;
         sub {
             my ($res, %args) = @_;
-            return $json->decode_json($res->content);
+            return $json->decode($res->content);
         }
     },
 );
@@ -68,7 +68,7 @@ has serializer => (
             # TODO: remove the next line after clients are updated to inject
             # custom serializers that will handle this logic
             return $data unless _content_type($args{headers}) =~ /json/;
-            return $json->encode_json($data);
+            return $json->encode($data);
         }
     }
 );
