@@ -8,8 +8,12 @@ use HTTP::Request;
 use HTTP::Request::Common qw(DELETE GET POST PUT);
 use JSON::MaybeXS;
 use LWP::UserAgent;
+use WebService::Client::Response;
 
-has base_url => ( is => 'ro', required => 1 );
+has base_url => (
+    is      => 'rw',
+    default => sub { '' },
+);
 
 has ua => (
     is      => 'ro',
@@ -19,12 +23,12 @@ has ua => (
 
 has timeout => (
     is      => 'ro',
-    default => 10,
+    default => sub { 10 },
 );
 
 has retries => (
     is      => 'ro',
-    default => 0,
+    default => sub { 0 },
     isa     => sub {
         my $r = shift;
         die 'retries must be a nonnegative integer'
@@ -36,12 +40,12 @@ has logger => ( is => 'ro' );
 
 has log_method => (
     is      => 'ro',
-    default => 'DEBUG',
+    default => sub { 'DEBUG' },
 );
 
 has content_type => (
     is      => 'rw',
-    default => 'application/json',
+    default => sub { 'application/json' },
 );
 
 has deserializer => (
@@ -77,6 +81,11 @@ has json => (
     is      => 'ro',
     lazy    => 1,
     default => sub { JSON::MaybeXS->new() },
+);
+
+has mode => (
+    is      => 'ro',
+    default => sub { 'classic' },
 );
 
 sub get {
@@ -151,8 +160,16 @@ sub req {
         $self->_log_response($res);
     }
 
-    return if $req->method eq 'GET' and $res->code =~ /404|410/;
     $self->prepare_response($res);
+
+    if ($self->mode ne 'classic') {
+        return WebService::Client::Response->new(
+            res  => $res,
+            json => $self->json,
+        );
+    }
+
+    return if $req->method eq 'GET' and $res->code =~ /404|410/;
     die $res unless $res->is_success;
     return 1 unless $res->content;
     my $des = $self->deserializer;
@@ -237,12 +254,11 @@ sub _content {
         use Moo;
         with 'WebService::Client';
 
-        use Function::Parameters;
-
-        has '+base_url' => ( default => 'https://foo.com/v1' );
         has auth_token  => ( is => 'ro', required => 1 );
 
         method BUILD() {
+            $self->base_url('https://foo.com/v1');
+
             $self->ua->default_header('X-Auth-Token' => $self->auth_token);
             # or if the web service uses http basic/digest authentication:
             # $self->ua->credentials( ... );
@@ -250,15 +266,18 @@ sub _content {
             # $self->ua->default_headers->authorization_basic( ... );
         }
 
-        method get_widgets() {
+        sub get_widgets() {
+            my ($self) = @_;
             return $self->get("/widgets");
         }
 
-        method get_widget($id) {
+        sub get_widget($id) {
+            my ($self, $id) = @_;
             return $self->get("/widgets/$id");
         }
 
-        method create_widget($widget_data) {
+        sub create_widget($widget_data) {
+            my ($self, $widget_data) = @_;
             return $self->post("/widgets", $widget_data);
         }
     }
@@ -272,6 +291,15 @@ sub _content {
     );
     my $widget = $client->create_widget({ color => 'blue' });
     print $client->get_widget($widget->{id})->{color};
+
+Minimal example which retrieves the current Bitcoin price:
+
+    package CoinDeskClient;
+    use Moo;
+    with 'WebService::Client';
+
+    my $client = CoinDeskClient->new(base_url => 'https://api.coindesk.com/v1');
+    print $client->get('/bpi/currentprice.json')->{bpi}{USD}{rate_float};
 
 =head1 DESCRIPTION
 
