@@ -30,7 +30,12 @@ has json => (
 
 sub data {
     my ($self) = @_;
-    return $self->json->decode($self->res->content);
+    return $self->json->decode($self->content);
+}
+
+sub ok {
+    my ($self) = @_;
+    return $self->is_success;
 }
 
 1;
