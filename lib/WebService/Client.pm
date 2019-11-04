@@ -6,7 +6,7 @@ use Moo::Role;
 use Carp qw(croak);
 use HTTP::Request;
 use HTTP::Request::Common qw(DELETE GET POST PUT);
-use JSON::MaybeXS;
+use JSON::MaybeXS qw();
 use LWP::UserAgent;
 use WebService::Client::Response;
 
@@ -85,7 +85,7 @@ has json => (
 
 has mode => (
     is      => 'ro',
-    default => sub { 'classic' },
+    default => sub { '' },
 );
 
 sub get {
@@ -162,7 +162,7 @@ sub req {
 
     $self->prepare_response($res);
 
-    if ($self->mode ne 'classic') {
+    if ($self->mode) {
         return WebService::Client::Response->new(
             res  => $res,
             json => $self->json,
