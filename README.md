@@ -13,12 +13,11 @@ version 0.0601
         use Moo;
         with 'WebService::Client';
 
-        use Function::Parameters;
-
-        has '+base_url' => ( default => 'https://foo.com/v1' );
         has auth_token  => ( is => 'ro', required => 1 );
 
         method BUILD() {
+            $self->base_url('https://foo.com/v1');
+
             $self->ua->default_header('X-Auth-Token' => $self->auth_token);
             # or if the web service uses http basic/digest authentication:
             # $self->ua->credentials( ... );
@@ -26,15 +25,18 @@ version 0.0601
             # $self->ua->default_headers->authorization_basic( ... );
         }
 
-        method get_widgets() {
+        sub get_widgets() {
+            my ($self) = @_;
             return $self->get("/widgets");
         }
 
-        method get_widget($id) {
+        sub get_widget($id) {
+            my ($self, $id) = @_;
             return $self->get("/widgets/$id");
         }
 
-        method create_widget($widget_data) {
+        sub create_widget($widget_data) {
+            my ($self, $widget_data) = @_;
             return $self->post("/widgets", $widget_data);
         }
     }
@@ -48,6 +50,15 @@ version 0.0601
     );
     my $widget = $client->create_widget({ color => 'blue' });
     print $client->get_widget($widget->{id})->{color};
+
+Minimal example which retrieves the current Bitcoin price:
+
+    package CoinDeskClient;
+    use Moo;
+    with 'WebService::Client';
+
+    my $client = CoinDeskClient->new(base_url => 'https://api.coindesk.com/v1');
+    print $client->get('/bpi/currentprice.json')->{bpi}{USD}{rate_float};
 
 # DESCRIPTION
 
@@ -65,8 +76,8 @@ response data, if the response body contained any data.
 This will usually be a hashref.
 If the web service responds with a failure, then the corresponding HTTP
 response object is thrown as an exception.
-This exception is a [HTTP::Response](https://metacpan.org/pod/HTTP::Response) object that has the
-[HTTP::Response::Stringable](https://metacpan.org/pod/HTTP::Response::Stringable) role so it can be easily logged.
+This exception is a [HTTP::Response](https://metacpan.org/pod/HTTP%3A%3AResponse) object that has the
+[HTTP::Response::Stringable](https://metacpan.org/pod/HTTP%3A%3AResponse%3A%3AStringable) role so it can be easily logged.
 GET requests that respond with a status code of `404` or `410` will not
 throw an exception.
 Instead, they will simply return `undef`.
@@ -78,7 +89,7 @@ named arguments:
 
     A hashref of custom headers to send for this request.
     In the future, this may also accept an arrayref.
-    The header values can be any format that [HTTP::Headers](https://metacpan.org/pod/HTTP::Headers) recognizes,
+    The header values can be any format that [HTTP::Headers](https://metacpan.org/pod/HTTP%3A%3AHeaders) recognizes,
     so you can pass `content_type` instead of `Content-Type`.
 
 - serializer
@@ -169,7 +180,7 @@ Optional. A proper default LWP::UserAgent will be created for you.
 
 ## json
 
-Optional. A proper default JSON object will be created via [JSON::MaybeXS](https://metacpan.org/pod/JSON::MaybeXS)
+Optional. A proper default JSON object will be created via [JSON::MaybeXS](https://metacpan.org/pod/JSON%3A%3AMaybeXS)
 
 You can also pass in your own custom JSON object to have more control over
 the JSON settings:
@@ -214,16 +225,16 @@ Set this to `undef` if you want the raw http response body to be returned.
 Here are some examples of web service clients built with this role.
 You can view their source to help you get started.
 
-- [Business::BalancedPayments](https://metacpan.org/pod/Business::BalancedPayments)
-- [WebService::HipChat](https://metacpan.org/pod/WebService::HipChat)
-- [WebService::Lob](https://metacpan.org/pod/WebService::Lob)
-- [WebService::SmartyStreets](https://metacpan.org/pod/WebService::SmartyStreets)
-- [WebService::Stripe](https://metacpan.org/pod/WebService::Stripe)
+- [Business::BalancedPayments](https://metacpan.org/pod/Business%3A%3ABalancedPayments)
+- [WebService::HipChat](https://metacpan.org/pod/WebService%3A%3AHipChat)
+- [WebService::Lob](https://metacpan.org/pod/WebService%3A%3ALob)
+- [WebService::SmartyStreets](https://metacpan.org/pod/WebService%3A%3ASmartyStreets)
+- [WebService::Stripe](https://metacpan.org/pod/WebService%3A%3AStripe)
 
 # SEE ALSO
 
-- [Net::HTTP::API](https://metacpan.org/pod/Net::HTTP::API)
-- [Role::REST::Client](https://metacpan.org/pod/Role::REST::Client)
+- [Net::HTTP::API](https://metacpan.org/pod/Net%3A%3AHTTP%3A%3AAPI)
+- [Role::REST::Client](https://metacpan.org/pod/Role%3A%3AREST%3A%3AClient)
 
 # CONTRIBUTORS
 
