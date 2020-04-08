@@ -162,7 +162,7 @@ sub req {
 
     $self->prepare_response($res);
 
-    if ($self->mode) {
+    if ($self->mode eq 'v2') {
         return WebService::Client::Response->new(
             res  => $res,
             json => $self->json,
@@ -256,7 +256,8 @@ sub _content {
 
         has auth_token  => ( is => 'ro', required => 1 );
 
-        method BUILD() {
+        sub BUILD {
+            my ($self) = @_;
             $self->base_url('https://foo.com/v1');
 
             $self->ua->default_header('X-Auth-Token' => $self->auth_token);
@@ -266,17 +267,17 @@ sub _content {
             # $self->ua->default_headers->authorization_basic( ... );
         }
 
-        sub get_widgets() {
+        sub get_widgets {
             my ($self) = @_;
             return $self->get("/widgets");
         }
 
-        sub get_widget($id) {
+        sub get_widget {
             my ($self, $id) = @_;
             return $self->get("/widgets/$id");
         }
 
-        sub create_widget($widget_data) {
+        sub create_widget {
             my ($self, $widget_data) = @_;
             return $self->post("/widgets", $widget_data);
         }
@@ -300,6 +301,21 @@ Minimal example which retrieves the current Bitcoin price:
 
     my $client = CoinDeskClient->new(base_url => 'https://api.coindesk.com/v1');
     print $client->get('/bpi/currentprice.json')->{bpi}{USD}{rate_float};
+
+Example using mode C<v2>.
+When using mode C<v2>, the client's http methods will always return a
+L<WebService::Client::Response> response object.
+
+    package CoinDeskClient;
+    use Moo;
+    with 'WebService::Client';
+
+    my $client = CoinDeskClient->new(
+        mode => 'v2',
+        base_url => 'https://api.coindesk.com/v1',
+    );
+    my $data = $client->get('/bpi/currentprice.json')->data;
+    print $data->{bpi}{USD}{rate_float};
 
 =head1 DESCRIPTION
 
