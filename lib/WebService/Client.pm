@@ -6,7 +6,7 @@ use Moo::Role;
 use Carp qw(croak);
 use HTTP::Request;
 use HTTP::Request::Common qw(DELETE GET POST PUT);
-use JSON::MaybeXS qw();
+use JSON::MaybeXS ();
 use LWP::UserAgent;
 use WebService::Client::Response;
 
