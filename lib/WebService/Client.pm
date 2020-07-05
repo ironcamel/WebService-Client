@@ -371,7 +371,7 @@ Example:
         { color => 'blue' },
         headers      => { x_custom_header => 'blah' },
         serializer   => sub { ... },
-        deserialized => sub { ... },
+        deserializer => sub { ... },
     }
 
 =head2 get
