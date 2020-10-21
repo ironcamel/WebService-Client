@@ -8,73 +8,79 @@ version 1.0001
 
 # SYNOPSIS
 
-    {
-        package WebService::Foo;
-        use Moo;
-        with 'WebService::Client';
-
-        has auth_token  => ( is => 'ro', required => 1 );
-
-        sub BUILD {
-            my ($self) = @_;
-            $self->base_url('https://foo.com/v1');
-
-            $self->ua->default_header('X-Auth-Token' => $self->auth_token);
-            # or if the web service uses http basic/digest authentication:
-            # $self->ua->credentials( ... );
-            # or
-            # $self->ua->default_headers->authorization_basic( ... );
-        }
-
-        sub get_widgets {
-            my ($self) = @_;
-            return $self->get("/widgets");
-        }
-
-        sub get_widget {
-            my ($self, $id) = @_;
-            return $self->get("/widgets/$id");
-        }
-
-        sub create_widget {
-            my ($self, $widget_data) = @_;
-            return $self->post("/widgets", $widget_data);
-        }
-    }
-
-    my $client = WebService::Foo->new(
-        auth_token => 'abc',
-        logger     => Log::Tiny->new('/tmp/foo.log'), # optional
-        log_method => 'info', # optional, defaults to 'DEBUG'
-        timeout    => 10, # optional, defaults to 10
-        retries    => 0,  # optional, defaults to 0
-    );
-    my $widget = $client->create_widget({ color => 'blue' });
-    print $client->get_widget($widget->{id})->{color};
-
-Minimal example which retrieves the current Bitcoin price:
-
-    package CoinDeskClient;
+```perl
+{
+    package WebService::Foo;
     use Moo;
     with 'WebService::Client';
 
-    my $client = CoinDeskClient->new(base_url => 'https://api.coindesk.com/v1');
-    print $client->get('/bpi/currentprice.json')->{bpi}{USD}{rate_float};
+    has auth_token  => ( is => 'ro', required => 1 );
+
+    sub BUILD {
+        my ($self) = @_;
+        $self->base_url('https://foo.com/v1');
+
+        $self->ua->default_header('X-Auth-Token' => $self->auth_token);
+        # or if the web service uses http basic/digest authentication:
+        # $self->ua->credentials( ... );
+        # or
+        # $self->ua->default_headers->authorization_basic( ... );
+    }
+
+    sub get_widgets {
+        my ($self) = @_;
+        return $self->get("/widgets");
+    }
+
+    sub get_widget {
+        my ($self, $id) = @_;
+        return $self->get("/widgets/$id");
+    }
+
+    sub create_widget {
+        my ($self, $widget_data) = @_;
+        return $self->post("/widgets", $widget_data);
+    }
+}
+
+my $client = WebService::Foo->new(
+    auth_token => 'abc',
+    logger     => Log::Tiny->new('/tmp/foo.log'), # optional
+    log_method => 'info', # optional, defaults to 'DEBUG'
+    timeout    => 10, # optional, defaults to 10
+    retries    => 0,  # optional, defaults to 0
+);
+my $widget = $client->create_widget({ color => 'blue' });
+print $client->get_widget($widget->{id})->{color};
+```
+
+Minimal example which retrieves the current Bitcoin price:
+
+```perl
+package CoinDeskClient;
+use Moo;
+with 'WebService::Client';
+
+my $client = CoinDeskClient->new(base_url => 'https://api.coindesk.com/v1');
+print $client->get('/bpi/currentprice.json')->{bpi}{USD}{rate_float};
+```
 
 Example using mode `v2`.
 When using mode `v2`, the client's http methods will always return a
 [WebService::Client::Response](https://metacpan.org/pod/WebService%3A%3AClient%3A%3AResponse) response object.
 
-    package CoinDeskClient;
-    use Moo;
-    with 'WebService::Client';
+```perl
+package CoinDeskClient;
+use Moo;
+with 'WebService::Client';
 
-    my $client = CoinDeskClient->new(
-        mode => 'v2',
-        base_url => 'https://api.coindesk.com/v1',
-    );
-    my $data = $client->get('/bpi/currentprice.json')->data;
-    print $data->{bpi}{USD}{rate_float};
+my $client = CoinDeskClient->new(
+    mode => 'v2',
+    base_url => 'https://api.coindesk.com/v1',
+);
+my $data = $client->get('/bpi/currentprice.json')->data;
+print $data->{bpi}{USD}{rate_float};
+```
 
 # DESCRIPTION
 
@@ -121,51 +127,65 @@ named arguments:
 
 Example:
 
-    $client->post(
-        /widgets,
-        { color => 'blue' },
-        headers      => { x_custom_header => 'blah' },
-        serializer   => sub { ... },
-        deserialized => sub { ... },
-    }
+```perl
+$client->post(
+    /widgets,
+    { color => 'blue' },
+    headers      => { x_custom_header => 'blah' },
+    serializer   => sub { ... },
+    deserializer => sub { ... },
+}
+```
 
 ## get
 
-    $client->get('/foo');
-    $client->get('/foo', { query => 'params' });
-    $client->get('/foo', { query => [qw(array params)] });
+```perl
+$client->get('/foo');
+$client->get('/foo', { query => 'params' });
+$client->get('/foo', { query => [qw(array params)] });
+```
 
 Makes an HTTP GET request.
 
 ## post
 
-    $client->post('/foo', { some => 'data' });
-    $client->post('/foo', { some => 'data' }, headers => { foo => 'bar' });
+```perl
+$client->post('/foo', { some => 'data' });
+$client->post('/foo', { some => 'data' }, headers => { foo => 'bar' });
+```
 
 Makes an HTTP POST request.
 
 ## put
 
-    $client->put('/foo', { some => 'data' });
+```perl
+$client->put('/foo', { some => 'data' });
+```
 
 Makes an HTTP PUT request.
 
 ## patch
 
-    $client->patch('/foo', { some => 'data' });
+```perl
+$client->patch('/foo', { some => 'data' });
+```
 
 Makes an HTTP PATCH request.
 
 ## delete
 
-    $client->delete('/foo');
+```
+$client->delete('/foo');
+```
 
 Makes an HTTP DELETE request.
 
 ## req
 
-    my $req = HTTP::Request->new(...);
-    $client->req($req);
+```perl
+my $req = HTTP::Request->new(...);
+$client->req($req);
+```
 
 This is called internally by the above HTTP methods.
 You will usually not need to call this explicitly.
@@ -173,11 +193,13 @@ It is exposed as part of the public interface in case you may want to add
 a method modifier to it.
 Here is a contrived example:
 
-    around req => sub {
-        my ($orig, $self, $req) = @_;
-        $req->authorization_basic($self->login, $self->password);
-        return $self->$orig($req, @rest);
-    };
+```perl
+around req => sub {
+    my ($orig, $self, $req) = @_;
+    $req->authorization_basic($self->login, $self->password);
+    return $self->$orig($req, @rest);
+};
+```
 
 ## log
 
@@ -201,9 +223,11 @@ Optional. A proper default JSON object will be created via [JSON::MaybeXS](https
 You can also pass in your own custom JSON object to have more control over
 the JSON settings:
 
-    my $client = WebService::Foo->new(
-        json => JSON::MaybeXS->new(utf8 => 1, pretty => 1)
-    );
+```perl
+my $client = WebService::Foo->new(
+    json => JSON::MaybeXS->new(utf8 => 1, pretty => 1)
+);
+```
 
 ## timeout
 
