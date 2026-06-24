@@ -4,11 +4,13 @@ use Moo::Role;
 # VERSION
 
 use Carp qw(croak);
-use HTTP::Request;
+use Ref::Util qw(is_plain_arrayref is_plain_coderef is_plain_hashref);
+use URI ();
+use HTTP::Request ();
 use HTTP::Request::Common qw(DELETE GET POST PUT);
 use JSON::MaybeXS ();
-use LWP::UserAgent;
-use WebService::Client::Response;
+use LWP::UserAgent ();
+use WebService::Client::Response ();
 
 has base_url => (
     is      => 'rw',
@@ -88,27 +90,31 @@ has mode => (
     default => sub { '' },
 );
 
+has array_query_style => (
+    is      => 'ro',
+    default => sub { 'php' },
+    isa     => sub {
+        my $s = shift;
+        die q{array_query_style must be "php" or "rfc"}
+            unless $s eq 'php' or $s eq 'rfc';
+    },
+);
+
 sub get {
     my ($self, $path, $params, %args) = @_;
     $params ||= {};
     my $headers = $self->_headers(\%args);
     my $url = $self->_url($path);
-    my $q = '';
-    if (%$params) {
-        my @items;
-        while (my ($key, $value) = each %$params) {
-            if ('ARRAY' eq ref $value) {
-                push @items, map "$key\[]=$_", @$value;
-            }
-            else {
-                push @items, "$key=$value";
-            }
+    my $uri = URI->new($url);
+    if (keys %$params) {
+        if ($self->array_query_style eq 'php') {
+            $uri->query_form_hash($self->_php_params($params));
         }
-        if (@items) {
-            $q = '?' . join '&', @items;
+        else {
+            $uri->query_form_hash($params);
         }
     }
-    my $req = GET "$url$q", %$headers;
+    my $req = GET $uri->as_string, %$headers;
     return $self->req($req, %args);
 }
 
@@ -176,7 +182,7 @@ sub req {
     $des = $args{deserializer} if exists $args{deserializer};
     if ($des) {
         die 'deserializer must be a coderef or undef'
-            unless 'CODE' eq ref $des;
+            unless is_plain_coderef($des);
         return $des->($res, %args);
     }
     else {
@@ -206,7 +212,7 @@ sub _url {
 sub _headers {
     my ($self, $args) = @_;
     my $headers = $args->{headers} ||= {};
-    croak 'The headers param must be a hashref' unless 'HASH' eq ref $headers;
+    croak 'The headers param must be a hashref' unless is_plain_hashref($headers);
     $headers->{content_type} = $self->content_type
         unless _content_type($headers);
     return $headers;
@@ -237,12 +243,26 @@ sub _content {
         $ser = $args{serializer} if exists $args{serializer};
         if ($ser) {
             die 'serializer must be a coderef or undef'
-                unless 'CODE' eq ref $ser;
+                unless is_plain_coderef($ser);
             $data = $ser->($data, %args);
         }
         @content = ( content => $data );
     }
     return @content;
+}
+
+sub _php_params {
+    my ($self, $params) = @_;
+    my %php;
+    while (my ($key, $value) = each %$params) {
+        if (is_plain_arrayref($value)) {
+            $php{"$key\[]"} = $value;
+        }
+        else {
+            $php{$key} = $value;
+        }
+    }
+    return \%php;
 }
 
 # ABSTRACT: A base role for quickly and easily creating web service clients
@@ -468,6 +488,24 @@ Optional.
 
 Optional.
 Default is C<'application/json'>.
+
+=head2 array_query_style
+
+Optional.
+Controls how array-valued query parameters are encoded in GET requests.
+
+    # php style (default) - ids[]=1&ids[]=2
+    array_query_style => 'php',
+
+    # rfc style - ids=1&ids=2
+    array_query_style => 'rfc',
+
+The C<'php'> style appends C<[]> to the key for each array value. This
+matches how query parameters are parsed in many web frameworks. It is the
+default for backward compatibility with earlier versions of this module.
+
+The C<'rfc'> style repeats the key for each value. This is specified by
+RFC 3986 and is the standard behavior for most modern REST APIs.
 
 =head2 serializer
 
