@@ -248,6 +248,26 @@ Optional.
 Optional.
 Default is `'application/json'`.
 
+## array\_query\_style
+
+Optional.
+Controls how array-valued query parameters are encoded in GET requests.
+
+```perl
+# php style (default) - ids[]=1&ids[]=2
+array_query_style => 'php',
+
+# rfc style - ids=1&ids=2
+array_query_style => 'rfc',
+```
+
+The `'php'` style appends `[]` to the key for each array value. This
+matches how query parameters are parsed in many web frameworks. It is the
+default for backward compatibility with earlier versions of this module.
+
+The `'rfc'` style repeats the key for each value. This is specified by
+RFC 3986 and is the standard behavior for most modern REST APIs.
+
 ## serializer
 
 Optional.
