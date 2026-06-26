@@ -58,7 +58,7 @@ has deserializer => (
         my $json = $self->json;
         sub {
             my ($res, %args) = @_;
-            return $json->decode($res->content);
+            return $json->decode($res->decoded_content);
         }
     },
 );
