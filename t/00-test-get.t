@@ -115,4 +115,27 @@ subtest 'GET without params' => sub {
   is scalar @$widgets, 1, 'correct amount of values in returned list';
 };
 
+subtest 'GET with gzipped response' => sub {
+  use Compress::Zlib qw(memGzip);
+
+  my $json_data = '{"name":"José"}';
+  my $gzipped = memGzip($json_data);
+
+  my $useragent = Test::LWP::UserAgent->new;
+  $useragent->map_response(
+    qr{example.com/gzip},
+    HTTP::Response->new(
+      '200', 'OK',
+      ['Content-Type' => 'application/json', 'Content-Encoding' => 'gzip'],
+      $gzipped,
+    ),
+  );
+
+  my $webservice = WebService::Foo->new(ua => $useragent);
+
+  my $result = $webservice->get('/gzip');
+  ok $result, 'deserialized gzipped response';
+  is $result->{name}, 'José', 'correct value from gzipped response';
+};
+
 done_testing();
