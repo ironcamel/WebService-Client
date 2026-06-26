@@ -254,7 +254,8 @@ sub _content {
 sub _php_params {
     my ($self, $params) = @_;
     my %php;
-    while (my ($key, $value) = each %$params) {
+    for my $key (keys %$params) {
+        my $value = $params->{$key};
         if (is_plain_arrayref($value)) {
             $php{"$key\[]"} = $value;
         }
