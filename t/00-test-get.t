@@ -175,4 +175,22 @@ subtest 'GET with url-like paths' => sub {
     'https://... treated as absolute URL, base_url bypassed';
 };
 
+subtest 'invalid headers are rejected' => sub {
+  my $useragent = Test::LWP::UserAgent->new;
+  $useragent->map_response(
+    qr{.*},
+    HTTP::Response->new('200', 'OK', ['Content-Type' => 'application/json'], '{}'),
+  );
+
+  my $webservice = WebService::Foo->new(ua => $useragent);
+
+  eval { $webservice->get('/foo', {}, headers => 0) };
+  ok $@, 'headers => 0 croaks';
+  like $@, qr/headers param must be a hashref/, 'correct error message';
+
+  eval { $webservice->get('/foo', {}, headers => '') };
+  ok $@, 'headers => "" croaks';
+  like $@, qr/headers param must be a hashref/, 'correct error message for empty string';
+};
+
 done_testing();

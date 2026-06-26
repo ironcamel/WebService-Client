@@ -208,7 +208,7 @@ sub _url {
 
 sub _headers {
     my ($self, $args) = @_;
-    my $headers = $args->{headers} ||= {};
+    my $headers = $args->{headers} // {};
     croak 'The headers param must be a hashref' unless is_plain_hashref($headers);
     $headers->{content_type} = $self->content_type
         unless _content_type($headers);
