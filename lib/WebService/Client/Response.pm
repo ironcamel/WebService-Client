@@ -4,12 +4,13 @@ use Moo;
 # VERSION
 
 use JSON::MaybeXS ();
+use Scalar::Util qw(blessed);
 
 has res => (
     is => 'ro',
     isa => sub {
         die 'res must be a HTTP::Response object'
-            unless shift->isa('HTTP::Response');
+            unless blessed($_[0]) && $_[0]->isa('HTTP::Response');
     },
     required => 1,
     handles => [qw(
