@@ -138,4 +138,24 @@ subtest 'GET with gzipped response' => sub {
   is $result->{name}, 'José', 'correct value from gzipped response';
 };
 
+subtest 'GET with url-like paths' => sub {
+  my $useragent = Test::LWP::UserAgent->new;
+  $useragent->map_response(
+    qr{.*},
+    HTTP::Response->new('200', 'OK', ['Content-Type' => 'application/json'], '{}'),
+  );
+
+  my $webservice = WebService::Foo->new(ua => $useragent);
+
+  $webservice->get('http:/evil.com/api');
+  my $url = $useragent->last_http_request_sent->uri;
+  is "$url", 'https://example.comhttp:/evil.com/api',
+    'http:/... treated as relative path, appended to base_url';
+
+  $webservice->get('https://valid.com/api');
+  $url = $useragent->last_http_request_sent->uri;
+  is "$url", 'https://valid.com/api',
+    'https://... treated as absolute URL, base_url bypassed';
+};
+
 done_testing();
