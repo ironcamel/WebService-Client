@@ -115,6 +115,23 @@ subtest 'GET without params' => sub {
   is scalar @$widgets, 1, 'correct amount of values in returned list';
 };
 
+subtest 'PATCH' => sub {
+  my $useragent = Test::LWP::UserAgent->new;
+  $useragent->map_response(
+    qr{example.com/widgets/1},
+    HTTP::Response->new('200', 'OK', ['Content-Type' => 'application/json'], '{}'),
+  );
+
+  my $webservice = WebService::Foo->new(ua => $useragent);
+
+  $webservice->patch('/widgets/1', { color => 'blue' });
+  my $req = $useragent->last_http_request_sent;
+  is $req->method, 'PATCH', 'method is PATCH';
+  is $req->uri->as_string, 'https://example.com/widgets/1', 'correct URL';
+  like $req->header('Content-Type'), qr{application/json}, 'Content-Type is set';
+  is $req->content, '{"color":"blue"}', 'body is JSON-encoded';
+};
+
 subtest 'GET with gzipped response' => sub {
   use Compress::Zlib qw(memGzip);
 

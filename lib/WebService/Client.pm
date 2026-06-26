@@ -7,7 +7,7 @@ use Carp qw(croak);
 use Ref::Util qw(is_plain_arrayref is_plain_coderef is_plain_hashref);
 use URI ();
 use HTTP::Request ();
-use HTTP::Request::Common qw(DELETE GET POST PUT);
+use HTTP::Request::Common qw(DELETE GET PATCH POST PUT);
 use JSON::MaybeXS ();
 use LWP::UserAgent ();
 use WebService::Client::Response ();
@@ -138,10 +138,7 @@ sub patch {
     my ($self, $path, $data, %args) = @_;
     my $headers = $self->_headers(\%args);
     my $url = $self->_url($path);
-    my %content = $self->_content($data, %args);
-    my $req = HTTP::Request->new(
-        'PATCH', $url, [%$headers], $content{content}
-    );
+    my $req = PATCH $url, %$headers, $self->_content($data, %args);
     return $self->req($req, %args);
 }
 
@@ -419,6 +416,7 @@ Makes an HTTP PUT request.
 =head2 patch
 
     $client->patch('/foo', { some => 'data' });
+    $client->patch('/foo', { some => 'data' }, headers => { foo => 'bar' });
 
 Makes an HTTP PATCH request.
 
