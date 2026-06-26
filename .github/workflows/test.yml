@@ -1,0 +1,31 @@
+name: test
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        perl: ['5.36', '5.42']
+    runs-on: ubuntu-latest
+    name: Perl ${{ matrix.perl }}
+    env:
+      TAR_OPTIONS: '--warning=no-unknown-keyword'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: ${{ matrix.perl }}
+      - name: perl -V
+        run: perl -V
+      - name: Install Dist::Zilla and deps
+        run: |
+          cpanm -n Dist::Zilla
+          dzil authordeps --missing | cpanm -n
+          dzil listdeps --develop --missing | cpanm -n
+      - name: Run tests
+        run: dzil test
