@@ -168,6 +168,7 @@ Makes an HTTP PUT request.
 
 ```perl
 $client->patch('/foo', { some => 'data' });
+$client->patch('/foo', { some => 'data' }, headers => { foo => 'bar' });
 ```
 
 Makes an HTTP PATCH request.
