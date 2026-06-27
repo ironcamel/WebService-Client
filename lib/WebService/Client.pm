@@ -144,7 +144,8 @@ sub patch {
 
 sub delete {
     my ($self, $path, %args) = @_;
-    my $headers = $self->_headers(\%args);
+    my $headers = delete $args{headers} || {};
+    croak 'The headers param must be a hashref' unless is_plain_hashref($headers);
     my $url = $self->_url($path);
     my $req = DELETE $url, %$headers;
     return $self->req($req, %args);

@@ -132,6 +132,22 @@ subtest 'PATCH' => sub {
   is $req->content, '{"color":"blue"}', 'body is JSON-encoded';
 };
 
+subtest 'DELETE' => sub {
+  my $useragent = Test::LWP::UserAgent->new;
+  $useragent->map_response(
+    qr{example.com/widgets/1},
+    HTTP::Response->new('200', 'OK', ['Content-Type' => 'application/json'], '{}'),
+  );
+
+  my $webservice = WebService::Foo->new(ua => $useragent);
+
+  $webservice->delete('/widgets/1');
+  my $req = $useragent->last_http_request_sent;
+  is $req->method, 'DELETE', 'method is DELETE';
+  is $req->uri->as_string, 'https://example.com/widgets/1', 'correct URL';
+  ok !$req->header('Content-Type'), 'no Content-Type header on DELETE';
+};
+
 subtest 'GET with gzipped response' => sub {
   use Compress::Zlib qw(memGzip);
 
