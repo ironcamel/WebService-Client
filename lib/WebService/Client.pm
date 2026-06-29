@@ -4,7 +4,7 @@ use Moo::Role;
 # VERSION
 
 use Carp qw(croak);
-use Ref::Util qw(is_plain_arrayref is_plain_coderef is_plain_hashref);
+use Ref::Util qw(is_hashref is_plain_arrayref is_plain_coderef);
 use URI ();
 use HTTP::Request ();
 use HTTP::Request::Common qw(DELETE GET PATCH POST PUT);
@@ -144,7 +144,9 @@ sub patch {
 
 sub delete {
     my ($self, $path, %args) = @_;
-    my $headers = $self->_headers(\%args);
+    my $headers = $args{headers} || {};
+    croak 'The headers param must be a hashref'
+        unless is_hashref($headers);
     my $url = $self->_url($path);
     my $req = DELETE $url, %$headers;
     return $self->req($req, %args);
@@ -210,7 +212,8 @@ sub _headers {
     my ($self, $args) = @_;
     my $headers = $args->{headers} // {};
     $args->{headers} = $headers;
-    croak 'The headers param must be a hashref' unless is_plain_hashref($headers);
+    croak 'The headers param must be a hashref'
+        unless is_hashref($headers);
     $headers->{content_type} = $self->content_type
         unless _content_type($headers);
     return $headers;
