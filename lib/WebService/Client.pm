@@ -103,9 +103,7 @@ has array_query_style => (
 sub get {
     my ($self, $path, $params, %args) = @_;
     $params //= {};
-    my $headers = $args{headers} // {};
-    croak 'The headers param must be a hashref'
-        unless is_hashref($headers);
+    my $headers = $self->_headers(\%args);
     my $url = $self->_url($path);
     my $uri = URI->new($url);
     if (keys %$params) {
@@ -122,7 +120,7 @@ sub get {
 
 sub post {
     my ($self, $path, $data, %args) = @_;
-    my $headers = $self->_headers(\%args);
+    my $headers = $self->_headers_content_type(\%args);
     my $url = $self->_url($path);
     my $req = POST $url, %$headers, $self->_content($data, %args);
     return $self->req($req, %args);
@@ -130,7 +128,7 @@ sub post {
 
 sub put {
     my ($self, $path, $data, %args) = @_;
-    my $headers = $self->_headers(\%args);
+    my $headers = $self->_headers_content_type(\%args);
     my $url = $self->_url($path);
     my $req = PUT $url, %$headers, $self->_content($data, %args);
     return $self->req($req, %args);
@@ -138,7 +136,7 @@ sub put {
 
 sub patch {
     my ($self, $path, $data, %args) = @_;
-    my $headers = $self->_headers(\%args);
+    my $headers = $self->_headers_content_type(\%args);
     my $url = $self->_url($path);
     my $req = PATCH $url, %$headers, $self->_content($data, %args);
     return $self->req($req, %args);
@@ -146,9 +144,7 @@ sub patch {
 
 sub delete {
     my ($self, $path, %args) = @_;
-    my $headers = $args{headers} || {};
-    croak 'The headers param must be a hashref'
-        unless is_hashref($headers);
+    my $headers = $self->_headers(\%args);
     my $url = $self->_url($path);
     my $req = DELETE $url, %$headers;
     return $self->req($req, %args);
@@ -213,11 +209,18 @@ sub _url {
 sub _headers {
     my ($self, $args) = @_;
     my $headers = $args->{headers} // {};
-    $args->{headers} = $headers;
     croak 'The headers param must be a hashref'
         unless is_hashref($headers);
-    $headers->{content_type} = $self->content_type
-        unless _content_type($headers);
+    return $headers;
+}
+
+sub _headers_content_type {
+    my ($self, $args) = @_;
+    my $headers = $self->_headers($args);
+    unless (_content_type($headers)) {
+        $headers = { %$headers, content_type => $self->content_type };
+        $args->{headers} = $headers;
+    }
     return $headers;
 }
 
