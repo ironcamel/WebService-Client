@@ -102,8 +102,10 @@ has array_query_style => (
 
 sub get {
     my ($self, $path, $params, %args) = @_;
-    $params ||= {};
-    my $headers = $self->_headers(\%args);
+    $params //= {};
+    my $headers = $args{headers} // {};
+    croak 'The headers param must be a hashref'
+        unless is_hashref($headers);
     my $url = $self->_url($path);
     my $uri = URI->new($url);
     if (keys %$params) {
