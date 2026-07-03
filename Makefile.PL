@@ -31,6 +31,7 @@ my %WriteMakefileArgs = (
     "URI" => 0
   },
   "TEST_REQUIRES" => {
+    "Clone" => 0,
     "Compress::Zlib" => 0,
     "ExtUtils::MakeMaker" => 0,
     "File::Spec" => 0,
@@ -50,6 +51,7 @@ my %WriteMakefileArgs = (
 
 my %FallbackPrereqs = (
   "Carp" => 0,
+  "Clone" => 0,
   "Compress::Zlib" => 0,
   "ExtUtils::MakeMaker" => 0,
   "File::Spec" => 0,

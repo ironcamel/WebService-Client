@@ -3,8 +3,9 @@
 use strict;
 use warnings;
 
+use Clone qw(clone);
 use Test::LWP::UserAgent;
-use Test::More import => [qw( done_testing is like ok subtest )];
+use Test::More import => [qw( done_testing is is_deeply like ok subtest )];
 
 {
   package WebService::Foo;
@@ -207,6 +208,73 @@ subtest 'invalid headers are rejected' => sub {
   eval { $webservice->get('/foo', {}, headers => '') };
   ok $@, 'headers => "" croaks';
   like $@, qr/headers param must be a hashref/, 'correct error message for empty string';
+};
+
+subtest 'methods do not mutate caller arguments' => sub {
+  my $ua = Test::LWP::UserAgent->new;
+  $ua->map_response(
+    qr{.*},
+    HTTP::Response->new('200', 'OK', ['Content-Type' => 'application/json'], '{}'),
+  );
+
+  my $svc = WebService::Foo->new(ua => $ua);
+
+  {
+    my %args = (headers => { 'X-Custom' => 'val' });
+    my $args_copy = clone(\%args);
+    my $params = { colour => 'blue', ids => [1, 2], nested => { a => 1 } };
+    my $params_copy = clone($params);
+
+    $svc->get('/foo', $params, %args);
+
+    is_deeply \%args, $args_copy, 'get: %args unchanged';
+    is_deeply $params, $params_copy, 'get: $params unchanged';
+  }
+
+  {
+    my %args = (headers => { 'X-Custom' => 'val' });
+    my $args_copy = clone(\%args);
+    my $data = { name => 'test', tags => ['x', 'y'] };
+    my $data_copy = clone($data);
+
+    $svc->post('/foo', $data, %args);
+
+    is_deeply \%args, $args_copy, 'post: %args unchanged';
+    is_deeply $data, $data_copy, 'post: $data unchanged';
+  }
+
+  {
+    my %args = (headers => { 'X-Custom' => 'val' });
+    my $args_copy = clone(\%args);
+    my $data = { name => 'test', tags => ['x', 'y'] };
+    my $data_copy = clone($data);
+
+    $svc->put('/foo', $data, %args);
+
+    is_deeply \%args, $args_copy, 'put: %args unchanged';
+    is_deeply $data, $data_copy, 'put: $data unchanged';
+  }
+
+  {
+    my %args = (headers => { 'X-Custom' => 'val' });
+    my $args_copy = clone(\%args);
+    my $data = { name => 'test', tags => ['x', 'y'] };
+    my $data_copy = clone($data);
+
+    $svc->patch('/foo', $data, %args);
+
+    is_deeply \%args, $args_copy, 'patch: %args unchanged';
+    is_deeply $data, $data_copy, 'patch: $data unchanged';
+  }
+
+  {
+    my %args = (headers => { 'X-Custom' => 'val' });
+    my $args_copy = clone(\%args);
+
+    $svc->delete('/foo', %args);
+
+    is_deeply \%args, $args_copy, 'delete: %args unchanged';
+  }
 };
 
 done_testing();
