@@ -227,6 +227,7 @@ subtest 'methods do not mutate caller arguments' => sub {
 
     $svc->get('/foo', $params, %args);
 
+    ok(!$ua->last_http_request_sent->header('Content-Type'), 'get: no Content-Type header');
     is_deeply \%args, $args_copy, 'get: %args unchanged';
     is_deeply $params, $params_copy, 'get: $params unchanged';
   }
