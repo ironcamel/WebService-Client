@@ -100,19 +100,14 @@ has array_query_style => (
     },
 );
 
-sub get {
-    my ($self, $path, $params, %args) = @_;
-    $params //= {};
-    my $headers = $self->_headers(\%args);
-    my $req = GET $self->_build_url($path, $params), %$headers;
-    return $self->req($req, %args);
-}
+sub get  { shift->_request_with_params(\&GET,  @_) }
+sub head { shift->_request_with_params(\&HEAD, @_) }
 
-sub head {
-    my ($self, $path, $params, %args) = @_;
+sub _request_with_params {
+    my ($self, $method, $path, $params, %args) = @_;
     $params //= {};
     my $headers = $self->_headers(\%args);
-    my $req = HEAD $self->_build_url($path, $params), %$headers;
+    my $req = $method->($self->_build_url($path, $params), %$headers);
     return $self->req($req, %args);
 }
 
@@ -265,8 +260,9 @@ sub _content {
     return @content;
 }
 
-sub _php_params {
+sub _encode_params {
     my ($self, $params) = @_;
+    return $params unless $self->array_query_style eq 'php';
     my %php;
     for my $key (keys %$params) {
         my $value = $params->{$key};
@@ -284,12 +280,7 @@ sub _build_url {
     my ($self, $path, $params) = @_;
     my $uri = URI->new($self->_url($path));
     if (keys %$params) {
-        if ($self->array_query_style eq 'php') {
-            $uri->query_form_hash($self->_php_params($params));
-        }
-        else {
-            $uri->query_form_hash($params);
-        }
+        $uri->query_form_hash($self->_encode_params($params));
     }
     return $uri->as_string;
 }
