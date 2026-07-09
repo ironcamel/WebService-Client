@@ -7,7 +7,7 @@ use Carp qw(croak);
 use Ref::Util qw(is_hashref is_plain_arrayref is_plain_coderef);
 use URI ();
 use HTTP::Request ();
-use HTTP::Request::Common qw(DELETE GET PATCH POST PUT);
+use HTTP::Request::Common qw(DELETE GET HEAD OPTIONS PATCH POST PUT);
 use JSON::MaybeXS ();
 use LWP::UserAgent ();
 use WebService::Client::Response ();
@@ -104,17 +104,15 @@ sub get {
     my ($self, $path, $params, %args) = @_;
     $params //= {};
     my $headers = $self->_headers(\%args);
-    my $url = $self->_url($path);
-    my $uri = URI->new($url);
-    if (keys %$params) {
-        if ($self->array_query_style eq 'php') {
-            $uri->query_form_hash($self->_php_params($params));
-        }
-        else {
-            $uri->query_form_hash($params);
-        }
-    }
-    my $req = GET $uri->as_string, %$headers;
+    my $req = GET $self->_build_url($path, $params), %$headers;
+    return $self->req($req, %args);
+}
+
+sub head {
+    my ($self, $path, $params, %args) = @_;
+    $params //= {};
+    my $headers = $self->_headers(\%args);
+    my $req = HEAD $self->_build_url($path, $params), %$headers;
     return $self->req($req, %args);
 }
 
@@ -147,6 +145,16 @@ sub delete {
     my $headers = $self->_headers(\%args);
     my $url = $self->_url($path);
     my $req = DELETE $url, %$headers;
+    return $self->req($req, %args);
+}
+
+sub options {
+    my ($self, $path, $data, %args) = @_;
+    my $headers = defined $data
+        ? $self->_headers_content_type(\%args)
+        : $self->_headers(\%args);
+    my $url = $self->_url($path);
+    my $req = OPTIONS $url, %$headers, $self->_content($data, %args);
     return $self->req($req, %args);
 }
 
@@ -270,6 +278,20 @@ sub _php_params {
         }
     }
     return \%php;
+}
+
+sub _build_url {
+    my ($self, $path, $params) = @_;
+    my $uri = URI->new($self->_url($path));
+    if (keys %$params) {
+        if ($self->array_query_style eq 'php') {
+            $uri->query_form_hash($self->_php_params($params));
+        }
+        else {
+            $uri->query_form_hash($params);
+        }
+    }
+    return $uri->as_string;
 }
 
 # ABSTRACT: A base role for quickly and easily creating web service clients
