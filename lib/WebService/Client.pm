@@ -294,7 +294,7 @@ sub _build_url {
     return $uri->as_string;
 }
 
-# ABSTRACT: A base role for quickly and easily creating web service clients
+# ABSTRACT: A base role for creating web service clients
 
 =head1 SYNOPSIS
 
@@ -368,28 +368,27 @@ L<WebService::Client::Response> response object.
 
 =head1 DESCRIPTION
 
-This module is a base role for quickly and easily creating web service clients.
-Every time I created a web service client, I noticed that I kept rewriting the
-same boilerplate code independent of the web service.
-This module does the boring boilerplate for you so you can just focus on
-the fun part - writing the web service specific code.
+This module is a base role for creating web service clients.
+Every time I created one, I rewrote the same boilerplate code.
+This module provides that boilerplate so you can write the
+web service specific code.
 
 =head1 METHODS
 
 These are the methods this role composes into your class.
-The HTTP methods (get, post, put, and delete) will return the deserialized
-response data, if the response body contained any data.
+The HTTP methods (get, post, put, patch, delete, head, options) return the
+deserialized response data if the response body contains any data.
 This will usually be a hashref.
-If the web service responds with a failure, then the corresponding HTTP
-response object is thrown as an exception.
+If the web service responds with a failure, the corresponding HTTP response
+object is thrown as an exception.
 This exception is a L<HTTP::Response> object that has the
-L<HTTP::Response::Stringable> role so it can be easily logged.
+L<HTTP::Response::Stringable> role so it can be logged.
 GET requests that respond with a status code of C<404> or C<410> will not
 throw an exception.
 Instead, they will simply return C<undef>.
 
-The http methods C<get/post/put/delete> can all take the following optional
-named arguments:
+The http methods C<get/post/put/patch/delete/head/options> can all take the
+following optional named arguments:
 
 =over
 
@@ -416,7 +415,7 @@ Set this to C<undef> if you want the raw http response body to be returned.
 Example:
 
     $client->post(
-        /widgets,
+        '/widgets',
         { color => 'blue' },
         headers      => { x_custom_header => 'blah' },
         serializer   => sub { ... },
@@ -456,6 +455,22 @@ Makes an HTTP PATCH request.
     $client->delete('/foo');
 
 Makes an HTTP DELETE request.
+
+=head2 head
+
+    $client->head('/foo');
+    $client->head('/foo', { query => 'params' });
+    $client->head('/foo', { query => 'params' }, headers => { foo => 'bar' });
+
+Makes an HTTP HEAD request. Supports query parameters like C<get>.
+
+=head2 options
+
+    $client->options('/foo');
+    $client->options('/foo', { some => 'data' });
+    $client->options('/foo', { some => 'data' }, headers => { foo => 'bar' });
+
+Makes an HTTP OPTIONS request.
 
 =head2 req
 
@@ -551,8 +566,7 @@ Set this to C<undef> if you want the raw http response body to be returned.
 
 =head1 EXAMPLES
 
-Here are some examples of web service clients built with this role.
-You can view their source to help you get started.
+Web service clients built with this role:
 
 =over
 
