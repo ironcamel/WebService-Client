@@ -469,7 +469,7 @@ a method modifier to it.
 Here is a contrived example:
 
     around req => sub {
-        my ($orig, $self, $req) = @_;
+        my ($orig, $self, $req, @rest) = @_;
         $req->authorization_basic($self->login, $self->password);
         return $self->$orig($req, @rest);
     };
