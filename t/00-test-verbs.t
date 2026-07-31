@@ -278,4 +278,98 @@ subtest 'methods do not mutate caller arguments' => sub {
   }
 };
 
+subtest 'HEAD' => sub {
+  my $useragent = Test::LWP::UserAgent->new;
+  $useragent->map_response(
+    qr{example.com/widgets/1},
+    HTTP::Response->new('200', 'OK', ['Content-Type' => 'application/json'], ''),
+  );
+
+  my $webservice = WebService::Foo->new(ua => $useragent);
+
+  $webservice->head('/widgets/1');
+  my $req = $useragent->last_http_request_sent;
+  is $req->method, 'HEAD', 'method is HEAD';
+  is $req->uri->as_string, 'https://example.com/widgets/1', 'correct URL';
+  ok !$req->header('Content-Type'), 'no Content-Type header on HEAD';
+};
+
+subtest 'HEAD with query params' => sub {
+  my $useragent = Test::LWP::UserAgent->new;
+  $useragent->map_response(
+    qr{example.com},
+    HTTP::Response->new('200', 'OK', ['Content-Type' => 'application/json'], ''),
+  );
+
+  my $webservice = WebService::Foo->new(ua => $useragent);
+
+  $webservice->head('/foo', { colour => 'blue' });
+  my $url = $useragent->last_http_request_sent->uri;
+  is "$url", 'https://example.com/foo?colour=blue', 'HEAD with query params';
+};
+
+subtest 'OPTIONS' => sub {
+  my $useragent = Test::LWP::UserAgent->new;
+  $useragent->map_response(
+    qr{example.com/widgets},
+    HTTP::Response->new('200', 'OK', ['Content-Type' => 'application/json'], '{}'),
+  );
+
+  my $webservice = WebService::Foo->new(ua => $useragent);
+
+  $webservice->options('/widgets');
+  my $req = $useragent->last_http_request_sent;
+  is $req->method, 'OPTIONS', 'method is OPTIONS';
+  is $req->uri->as_string, 'https://example.com/widgets', 'correct URL';
+  like $req->header('Content-Type'), qr/form-urlencoded/, 'Content-Type set by HTTP::Request::Common';
+};
+
+subtest 'OPTIONS with body' => sub {
+  my $useragent = Test::LWP::UserAgent->new;
+  $useragent->map_response(
+    qr{example.com/widgets},
+    HTTP::Response->new('200', 'OK', ['Content-Type' => 'application/json'], '{}'),
+  );
+
+  my $webservice = WebService::Foo->new(ua => $useragent);
+
+  $webservice->options('/widgets', { color => 'blue' });
+  my $req = $useragent->last_http_request_sent;
+  is $req->method, 'OPTIONS', 'method is OPTIONS';
+  is $req->uri->as_string, 'https://example.com/widgets', 'correct URL';
+  like $req->header('Content-Type'), qr{application/json}, 'Content-Type is set';
+  is $req->content, '{"color":"blue"}', 'body is JSON-encoded';
+};
+
+subtest 'HEAD and options do not mutate caller arguments' => sub {
+  my $ua = Test::LWP::UserAgent->new;
+  $ua->map_response(
+    qr{.*},
+    HTTP::Response->new('200', 'OK', ['Content-Type' => 'application/json'], '{}'),
+  );
+
+  my $svc = WebService::Foo->new(ua => $ua);
+
+  {
+    my %args = (headers => { 'X-Custom' => 'val' });
+    my $args_copy = clone(\%args);
+    my $params = { colour => 'blue', ids => [1, 2] };
+    my $params_copy = clone($params);
+
+    $svc->head('/foo', $params, %args);
+
+    is_deeply \%args, $args_copy, 'head: %args unchanged';
+    is_deeply $params, $params_copy, 'head: $params unchanged';
+  }
+
+  {
+    my %args = (headers => { 'X-Custom' => 'val' });
+    my $args_copy = clone(\%args);
+
+    $svc->options('/foo', {}, %args);
+
+    is_deeply \%args, $args_copy, 'options: %args unchanged';
+  }
+};
+
 done_testing();
