@@ -1,10 +1,10 @@
 # NAME
 
-WebService::Client - A base role for quickly and easily creating web service clients
+WebService::Client - A base role for creating web service clients
 
 # VERSION
 
-version 1.0001
+version 1.0100
 
 # SYNOPSIS
 
@@ -67,7 +67,7 @@ print $client->get('/bpi/currentprice.json')->{bpi}{USD}{rate_float};
 
 Example using mode `v2`.
 When using mode `v2`, the client's http methods will always return a
-[WebService::Client::Response](https://metacpan.org/pod/WebService%3A%3AClient%3A%3AResponse) response object.
+[WebService::Client::Response](https://metacpan.org/pod/WebService::Client::Response) response object.
 
 ```perl
 package CoinDeskClient;
@@ -84,34 +84,33 @@ print $data->{bpi}{USD}{rate_float};
 
 # DESCRIPTION
 
-This module is a base role for quickly and easily creating web service clients.
-Every time I created a web service client, I noticed that I kept rewriting the
-same boilerplate code independent of the web service.
-This module does the boring boilerplate for you so you can just focus on
-the fun part - writing the web service specific code.
+This module is a base role for creating web service clients.
+Every time I created one, I rewrote the same boilerplate code.
+This module provides that boilerplate so you can write the
+web service specific code.
 
 # METHODS
 
 These are the methods this role composes into your class.
-The HTTP methods (get, post, put, and delete) will return the deserialized
-response data, if the response body contained any data.
+The HTTP methods (get, post, put, patch, delete, head, options) return the
+deserialized response data if the response body contains any data.
 This will usually be a hashref.
-If the web service responds with a failure, then the corresponding HTTP
-response object is thrown as an exception.
-This exception is a [HTTP::Response](https://metacpan.org/pod/HTTP%3A%3AResponse) object that has the
-[HTTP::Response::Stringable](https://metacpan.org/pod/HTTP%3A%3AResponse%3A%3AStringable) role so it can be easily logged.
+If the web service responds with a failure, the corresponding HTTP response
+object is thrown as an exception.
+This exception is a [HTTP::Response](https://metacpan.org/pod/HTTP::Response) object that has the
+[HTTP::Response::Stringable](https://metacpan.org/pod/HTTP::Response::Stringable) role so it can be logged.
 GET requests that respond with a status code of `404` or `410` will not
 throw an exception.
 Instead, they will simply return `undef`.
 
-The http methods `get/post/put/delete` can all take the following optional
-named arguments:
+The http methods `get/post/put/patch/delete/head/options` can all take the
+following optional named arguments:
 
 - headers
 
     A hashref of custom headers to send for this request.
     In the future, this may also accept an arrayref.
-    The header values can be any format that [HTTP::Headers](https://metacpan.org/pod/HTTP%3A%3AHeaders) recognizes,
+    The header values can be any format that [HTTP::Headers](https://metacpan.org/pod/HTTP::Headers) recognizes,
     so you can pass `content_type` instead of `Content-Type`.
 
 - serializer
@@ -129,7 +128,7 @@ Example:
 
 ```perl
 $client->post(
-    /widgets,
+    '/widgets',
     { color => 'blue' },
     headers      => { x_custom_header => 'blah' },
     serializer   => sub { ... },
@@ -181,6 +180,26 @@ $client->delete('/foo');
 
 Makes an HTTP DELETE request.
 
+## head
+
+```perl
+$client->head('/foo');
+$client->head('/foo', { query => 'params' });
+$client->head('/foo', { query => 'params' }, headers => { foo => 'bar' });
+```
+
+Makes an HTTP HEAD request. Supports query parameters like `get`.
+
+## options
+
+```perl
+$client->options('/foo');
+$client->options('/foo', { some => 'data' });
+$client->options('/foo', { some => 'data' }, headers => { foo => 'bar' });
+```
+
+Makes an HTTP OPTIONS request.
+
 ## req
 
 ```perl
@@ -196,7 +215,7 @@ Here is a contrived example:
 
 ```perl
 around req => sub {
-    my ($orig, $self, $req) = @_;
+    my ($orig, $self, $req, @rest) = @_;
     $req->authorization_basic($self->login, $self->password);
     return $self->$orig($req, @rest);
 };
@@ -219,7 +238,7 @@ Optional. A proper default LWP::UserAgent will be created for you.
 
 ## json
 
-Optional. A proper default JSON object will be created via [JSON::MaybeXS](https://metacpan.org/pod/JSON%3A%3AMaybeXS)
+Optional. A proper default JSON object will be created via [JSON::MaybeXS](https://metacpan.org/pod/JSON::MaybeXS)
 
 You can also pass in your own custom JSON object to have more control over
 the JSON settings:
@@ -283,19 +302,18 @@ Set this to `undef` if you want the raw http response body to be returned.
 
 # EXAMPLES
 
-Here are some examples of web service clients built with this role.
-You can view their source to help you get started.
+Web service clients built with this role:
 
-- [Business::BalancedPayments](https://metacpan.org/pod/Business%3A%3ABalancedPayments)
-- [WebService::HipChat](https://metacpan.org/pod/WebService%3A%3AHipChat)
-- [WebService::Lob](https://metacpan.org/pod/WebService%3A%3ALob)
-- [WebService::SmartyStreets](https://metacpan.org/pod/WebService%3A%3ASmartyStreets)
-- [WebService::Stripe](https://metacpan.org/pod/WebService%3A%3AStripe)
+- [Business::BalancedPayments](https://metacpan.org/pod/Business::BalancedPayments)
+- [WebService::HipChat](https://metacpan.org/pod/WebService::HipChat)
+- [WebService::Lob](https://metacpan.org/pod/WebService::Lob)
+- [WebService::SmartyStreets](https://metacpan.org/pod/WebService::SmartyStreets)
+- [WebService::Stripe](https://metacpan.org/pod/WebService::Stripe)
 
 # SEE ALSO
 
-- [Net::HTTP::API](https://metacpan.org/pod/Net%3A%3AHTTP%3A%3AAPI)
-- [Role::REST::Client](https://metacpan.org/pod/Role%3A%3AREST%3A%3AClient)
+- [Net::HTTP::API](https://metacpan.org/pod/Net::HTTP::API)
+- [Role::REST::Client](https://metacpan.org/pod/Role::REST::Client)
 
 # CONTRIBUTORS
 
